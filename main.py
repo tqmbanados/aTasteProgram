@@ -1,12 +1,12 @@
 from PyQt5.QtWidgets import QApplication
 
-from aTasteProgram.backend import PyPondWriter
-from aTasteProgram.frontend import PyPondWindow
+from backend.PyPondWriter import PyPondWriter
+from frontend.PyPondWindow import PyPondWindow
 import sys
 
 if __name__ == "__main__":
     def hook(type, value, traceback):
-        print(type)
+        print(value, type)
         print(traceback)
     sys.__excepthook__ = hook
 
