@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayo
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from os import path
-from parameters import SCORE_IMAGE_PATH, window_geometry
+from aTasteProgram.parameters import SCORE_IMAGE_PATH, window_geometry
 
 
 class PyPondWindow(QWidget):

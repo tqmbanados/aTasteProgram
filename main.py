@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QApplication
 
-from backend import PyPondWriter
-from frontend import PyPondWindow
+from aTasteProgram.backend import PyPondWriter
+from aTasteProgram.frontend import PyPondWindow
 import sys
 
 if __name__ == "__main__":
