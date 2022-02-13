@@ -16,17 +16,7 @@ class PyPondWriter(QObject):
 
     @pyqtSlot()
     def render_image(self):
-        melody = choices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1], k=10)
-        rhythm = choices([2, 4, 8], k=10)
-        new_melody = PondMelody()
-        fragment_1 = PondFragment()
-        for note, duration in zip(melody, rhythm):
-            fragment_1.fragments.append(PondNote(note, duration=duration))
-        fragment_3 = PondPhrase([3, fragment_1])
-
-        new_melody.fragments.append(fragment_1)
-        new_melody.fragments.append(fragment_3)
-        new_melody.transpose(8)
+        new_melody = self.test_score()
 
         header = PondHeader()
         score = PondScore.PondScore()
@@ -41,5 +31,20 @@ class PyPondWriter(QObject):
         self.render.write()
         self.render.render()
         self.file_completed.emit()
+
+    @staticmethod
+    def test_score():
+        melody = choices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1], k=10)
+        rhythm = choices([2, 4, 8], k=10)
+        new_melody = PondMelody()
+        fragment_1 = PondFragment()
+        for note, duration in zip(melody, rhythm):
+            fragment_1.fragments.append(PondNote(note, duration=duration))
+        fragment_3 = PondPhrase([3, fragment_1])
+
+        new_melody.fragments.append(fragment_1)
+        new_melody.fragments.append(fragment_3)
+        new_melody.transpose(8)
+        return new_melody
 
 
