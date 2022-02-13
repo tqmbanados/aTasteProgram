@@ -2,8 +2,8 @@ from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from pypond.PondFile import PondDoc, PondRender
 from pypond.PondCommand import PondHeader
 from pypond import PondScore
-from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase, PondTuplet
-from random import choices
+from backend.TasteComposer import MainComposer
+from os import path
 
 
 class PyPondWriter(QObject):
@@ -13,10 +13,12 @@ class PyPondWriter(QObject):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
+        self.composer = MainComposer(path.join('backend', "data.json"))
 
     @pyqtSlot()
     def render_image(self):
-        new_melody = self.test_score()
+        new_melody = self.composer.compose()
+        new_melody.transpose(12)
 
         header = PondHeader()
         score = PondScore.PondScore()
@@ -32,19 +34,5 @@ class PyPondWriter(QObject):
         self.render.render()
         self.file_completed.emit()
 
-    @staticmethod
-    def test_score():
-        melody = choices([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1], k=10)
-        rhythm = choices([2, 4, 8], k=10)
-        new_melody = PondMelody()
-        fragment_1 = PondFragment()
-        for note, duration in zip(melody, rhythm):
-            fragment_1.fragments.append(PondNote(note, duration=duration))
-        fragment_3 = PondPhrase([3, fragment_1])
-
-        new_melody.fragments.append(fragment_1)
-        new_melody.fragments.append(fragment_3)
-        new_melody.transpose(8)
-        return new_melody
 
 

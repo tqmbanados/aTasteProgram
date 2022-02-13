@@ -27,3 +27,4 @@ share/python-wheels/
 MANIFEST
 
 ly_files
+*/pypond/*
