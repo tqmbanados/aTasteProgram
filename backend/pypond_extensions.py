@@ -41,21 +41,20 @@ class DurationConverter:
 
     @classmethod
     def get_duration_list(cls, duration):
-        if duration % 0.125:
+        if duration % 0.125 or duration > 6:
             raise ValueError("DurationConverter currently only accepts "
-                             "values up to the semiquaver")
+                             "values up to the semiquaver and dotted whole note")
         duration_list = []
         current_value = duration
         next_value = 0
         while current_value > 0:
-            try:
+            if current_value in cls.simple_durations:
                 duration_list.append(cls.simple_durations[current_value])
-            except KeyError:
-                current_value -= 0.125
-                next_value += 125
-            else:
                 current_value = next_value
                 next_value = 0
+            else:
+                current_value -= 0.125
+                next_value += 0.125
         return duration_list
 
     @classmethod

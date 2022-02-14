@@ -4,6 +4,7 @@ from pypond import PondScore
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase, PondTuplet
 from random import choices, randint, choice
+from backend.pypond_extensions import DurationConverter
 
 
 class ComposerEmpty:
@@ -30,21 +31,37 @@ class ComposerA:
         evolution = randint(0, direction)
         duration = randint(2, 2 + volume)
         fragments = []
-        silence_list = choices([0, 0.5, 1], k=3)
+        silence_list = choices([0, 0, 0.25, 0.5, 0.75, 1], k=3)
+        used_tuplets = []
 
         for silence in silence_list:
             empty = randint(0, direction)
             trill = bool(randint(0, 1))
             climax = True if volume > 4 else False
+            tuplet_type = self.tuplet_type(silence, used_tuplets)
             new_fragment = self.compose_instrument(pitch_universe, evolution,
-                                                   duration, empty, silence,
-                                                   trill, climax)
+                                                   duration, not empty, silence,
+                                                   trill, climax, tuplet_type)
+            if not trill and not empty:
+                used_tuplets.append(tuplet_type)
             fragments.append(new_fragment)
 
         return fragments
 
+    def tuplet_type(self, silence_type, used):
+        def tuplet_filter(tuplet):
+            if tuplet[0] in used:
+                return False
+            if silence_type in (0.25, 0.5, 0.75) and tuplet[0] in ("5", "3"):
+                return False
+            return True
+        filtered = filter(tuplet_filter, self.tuplet_weights.items())
+        types, weights = zip(*filtered)
+        return choices(types, weights=weights)[0]
+
     def compose_instrument(self, pitch_universe, evolution, duration,
-                           empty=False, silence=0, trill=False, climax=False):
+                           empty=False, silence=0, trill=False, climax=False,
+                           tuplet_type="4"):
         if empty:
             return self.compose_silence(duration)
         remaining_duration = duration - silence
@@ -56,7 +73,8 @@ class ComposerA:
         else:
             music_fragment = self.compose_melodic_fragment(pitch_universe,
                                                            duration=remaining_duration,
-                                                           dynamic_climax=climax)
+                                                           dynamic_climax=climax,
+                                                           tuplet_type=tuplet_type)
         music_fragment.transpose(12)
         if not silence:
             return music_fragment
@@ -68,16 +86,15 @@ class ComposerA:
     @classmethod
     def compose_silence(cls, duration=4):
         fragment = PondFragment()
-        silence = cls.duration_converter[duration]
-        fragment.append_fragment(PondNote.create_rest(silence))
+        duration_list = DurationConverter.get_duration_list(duration)
+        for silence in duration_list:
+            fragment.append_fragment(PondNote.create_rest(silence))
         return fragment
 
     def compose_melodic_fragment(self, pitch_universe, duration=3,
-                                 dynamic_climax=False):
-        tuplet_type = self.get_tuplet_type()
+                                 dynamic_climax=False, tuplet_type="4"):
         note_number = int(tuplet_type) * int(duration)
         middle_note = note_number // 2
-        print(pitch_universe)
         index_route = self.build_index_route(note_number, len(pitch_universe))
         if tuplet_type == '4':
             melody = PondFragment()
@@ -126,7 +143,6 @@ class ComposerA:
         current = randint(0, 1)
         index_route = []
         route_fragment = iter(choice(route_fragments))
-        print(note_amount)
         for _ in range(note_amount):
             index_route.append(current)
             try:
@@ -151,6 +167,7 @@ class ComposerA:
         start_idx = randint(0, max_index)
         trill_idx = start_idx + 1
         start_pitch, trill_pitch = pitch_universe[start_idx], pitch_universe[trill_idx]
+        fragment = PondFragment()
         start_phrase = PondFragment()
         if start_idx >= tuplet_type:
             rest_fragment = PondFragment()
@@ -166,13 +183,19 @@ class ComposerA:
                 note_fragment.append_fragment(new_note)
             start_phrase.append_fragment(rest_fragment)
             start_phrase.append_fragment(note_fragment)
-        remaining_duration = duration - (len(start_phrase) // tuplet_type)
-
-        trill = PondNote(start_pitch,
-                         duration=self.duration_converter[remaining_duration])
-        pitched_trill = PondNote(trill_pitch)
-        trill.trill_marks(pitched=pitched_trill, relative=False)
-        fragment = PondFragment()
         fragment.append_fragment(start_phrase)
-        fragment.append_fragment(trill)
+
+        remaining_duration = duration - (len(start_phrase) // tuplet_type)
+        note_durations = DurationConverter.get_duration_list(remaining_duration)
+        main_note = PondNote(start_pitch,
+                             duration=note_durations[0])
+        main_note.trill_marks(pitched=trill_pitch, relative=False)
+        fragment.append_fragment(main_note)
+        if len(note_durations) > 1:
+            main_note.make_tie()
+            for note_part_duration in note_durations[1:]:
+                new_note = PondNote(start_pitch, duration=note_part_duration,
+                                    tie=True)
+                fragment.append_fragment(new_note)
+            fragment.ordered_notes()[-1].make_tie(False)
         return fragment
