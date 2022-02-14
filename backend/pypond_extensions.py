@@ -23,3 +23,45 @@ class PondInstrument:
 
     def transpose(self, melody):
         melody.transpose(self.transposition)
+
+
+class DurationConverter:
+    simple_durations = {0.125: "32",
+                        0.25: "16",
+                        0.375: "16.",
+                        0.5: "8",
+                        0.75: "8.",
+                        1: "4",
+                        1.5: "4.",
+                        2: "2",
+                        3: "2.",
+                        4: "1",
+                        6: "1."
+                        }
+
+    @classmethod
+    def get_duration_list(cls, duration):
+        if duration % 0.125:
+            raise ValueError("DurationConverter currently only accepts "
+                             "values up to the semiquaver")
+        duration_list = []
+        current_value = duration
+        next_value = 0
+        while current_value > 0:
+            try:
+                duration_list.append(cls.simple_durations[current_value])
+            except KeyError:
+                current_value -= 0.125
+                next_value += 125
+            else:
+                current_value = next_value
+                next_value = 0
+        return duration_list
+
+    @classmethod
+    def get_duration(cls, duration):
+        try:
+            return cls.simple_durations[duration]
+        except KeyError:
+            raise ValueError("DurationConverter currently only accepts "
+                             "values up to the semiquaver")
