@@ -17,16 +17,9 @@ class PyPondWriter(QObject):
 
     @pyqtSlot()
     def render_image(self):
-        new_melody = self.composer.compose()
-        new_melody.transpose(12)
-
+        score = self.composer.compose()
         header = PondHeader()
-        score = PondScore.PondScore()
-        staff = PondScore.PondStaff()
 
-        staff.add_voice(new_melody)
-        staff.add_with_command("omit", "TimeSignature")
-        score.add_staff(staff)
         self.pond_doc.score = score
         self.pond_doc.header = header
         self.render.update(self.pond_doc.create_file())

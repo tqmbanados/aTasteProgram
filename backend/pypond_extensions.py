@@ -6,11 +6,11 @@ class PondInstrument:
         self.transposition = transposition
 
     def validate_melody(self, melody):
-        if min(melody, key=lambda x: x.absolute_int) < self.range[0]:
+        if min(melody.ordered_notes(), key=lambda x: x.absolute_int) < self.range[0]:
             return False, "lower"
-        elif max(melody, key=lambda x: x.absolute_int) > self.range[2]:
+        elif max(melody.ordered_notes(), key=lambda x: x.absolute_int) > self.range[2]:
             return False, "higher"
-        elif max(melody, key=lambda x: x.absolute_int) > self.range[1]:
+        elif max(melody.ordered_notes(), key=lambda x: x.absolute_int) > self.range[1]:
             return True, "increased"
         return True, "normal"
 
@@ -23,4 +23,3 @@ class PondInstrument:
 
     def transpose(self, melody):
         melody.transpose(self.transposition)
-

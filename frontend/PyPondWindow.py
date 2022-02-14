@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import (QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
+                             QGridLayout)
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from os import path
@@ -31,26 +32,25 @@ class PyPondWindow(QWidget):
         return to_delete
 
     def init_gui(self):
-        v_box = QVBoxLayout()
-        for idx in range(4):
+        score_layout = QGridLayout()
+        for idx, x, y in [(0, 0, 0), (1, 0, 1), (2, 1, 0), (3, 1, 1)]:
             new_music_label = ScoreLabel(idx, parent=self)
             size_policy = QSizePolicy()
             size_policy.setRetainSizeWhenHidden(True)
             new_music_label.setSizePolicy(size_policy)
             self.music_labels[idx] = new_music_label
-            v_box.addStretch()
-            v_box.addWidget(new_music_label)
-            v_box.addStretch()
+            score_layout.addWidget(new_music_label, x, y)
 
         h_box_button = QHBoxLayout()
         h_box_button.addStretch()
         h_box_button.addWidget(self.next)
         h_box_button.addStretch()
 
-        v_box.addLayout(h_box_button)
-        v_box.addStretch()
+        hbox_main = QHBoxLayout()
+        hbox_main.addLayout(score_layout)
+        hbox_main.addLayout(h_box_button)
 
-        self.setLayout(v_box)
+        self.setLayout(hbox_main)
         self.setStyleSheet("background-color: white")
         self.next.clicked.connect(self.get_next)
 

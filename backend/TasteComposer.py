@@ -1,4 +1,5 @@
 from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase
+from pypond import PondScore
 from random import choices
 import json
 from backend.FragmentComposers import ComposerA
@@ -15,7 +16,16 @@ class MainComposer:
     def compose(self):
         fragment = 'A'
         pitch_universe = [0, 1, 3, 4, 6, 8, 9, 11]
-        return self.composers[fragment].compose(pitch_universe)
+        score = PondScore.PondScore()
+        for _ in range(3):
+            new_line = self.composers[fragment].compose(pitch_universe)
+            new_line.transpose(12)
+            staff = PondScore.PondStaff()
+
+            staff.add_voice(new_line)
+            staff.add_with_command("omit", "TimeSignature")
+            score.add_staff(staff)
+        return score
 
     @staticmethod
     def test_score():
