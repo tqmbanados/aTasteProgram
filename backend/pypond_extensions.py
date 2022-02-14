@@ -18,7 +18,8 @@ class PondInstrument:
         fits, cause = self.validate_melody(melody)
         if fits:
             return melody
-
+        if cause == "lower":
+            pass
 
     def transpose(self, melody):
         melody.transpose(self.transposition)
