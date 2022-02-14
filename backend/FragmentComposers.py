@@ -11,6 +11,7 @@ class ComposerEmpty:
 
 
 class ComposerA:
+
     def __init__(self, instruments=None):
         self.instruments = instruments or []
         self.tuplet_weights = {'3': 10,
@@ -23,24 +24,60 @@ class ComposerA:
                                     '5': (5, 4),
                                     '6': (6, 4)
                                     }
-        self.duration_converter = {0.5: "8",
-                                   1: "4",
-                                   2: "2",
-                                   3: "2.",
-                                   4: "1",
-                                   6: "1."
-                                   }
         self.dynamic = Dynamics.pianissimo
 
-    def compose(self, pitch_universe):
-        evolution = randint(3, 8)
-        return self.compose_trill_fragment(pitch_universe, evolution=evolution)
+    def compose(self, pitch_universe, direction, volume):
+        evolution = randint(0, direction)
+        duration = randint(2, 2 + volume)
+        fragments = []
+        silence_list = choices([0, 0.5, 1], k=3)
+
+        for silence in silence_list:
+            empty = randint(0, direction)
+            trill = bool(randint(0, 1))
+            climax = True if volume > 4 else False
+            new_fragment = self.compose_instrument(pitch_universe, evolution,
+                                                   duration, empty, silence,
+                                                   trill, climax)
+            fragments.append(new_fragment)
+
+        return fragments
+
+    def compose_instrument(self, pitch_universe, evolution, duration,
+                           empty=False, silence=0, trill=False, climax=False):
+        if empty:
+            return self.compose_silence(duration)
+        remaining_duration = duration - silence
+        new_fragment = PondFragment()
+        if trill:
+            music_fragment = self.compose_trill_fragment(pitch_universe,
+                                                         evolution=evolution,
+                                                         duration=remaining_duration)
+        else:
+            music_fragment = self.compose_melodic_fragment(pitch_universe,
+                                                           duration=remaining_duration,
+                                                           dynamic_climax=climax)
+        music_fragment.transpose(12)
+        if not silence:
+            return music_fragment
+        silence_fragment = self.compose_silence(silence)
+        new_fragment.append_fragment(silence_fragment)
+        new_fragment.append_fragment(music_fragment)
+        return new_fragment
+
+    @classmethod
+    def compose_silence(cls, duration=4):
+        fragment = PondFragment()
+        silence = cls.duration_converter[duration]
+        fragment.append_fragment(PondNote.create_rest(silence))
+        return fragment
 
     def compose_melodic_fragment(self, pitch_universe, duration=3,
                                  dynamic_climax=False):
         tuplet_type = self.get_tuplet_type()
-        note_number = int(tuplet_type) * duration
+        note_number = int(tuplet_type) * int(duration)
         middle_note = note_number // 2
+        print(pitch_universe)
         index_route = self.build_index_route(note_number, len(pitch_universe))
         if tuplet_type == '4':
             melody = PondFragment()
@@ -89,6 +126,7 @@ class ComposerA:
         current = randint(0, 1)
         index_route = []
         route_fragment = iter(choice(route_fragments))
+        print(note_amount)
         for _ in range(note_amount):
             index_route.append(current)
             try:
@@ -123,7 +161,7 @@ class ComposerA:
                 rest_fragment.append_fragment(rest)
             note_fragment = PondPhrase()
             for idx in range(start_idx):
-                note_duration= 8 if tuplet_type == 3 else 16
+                note_duration = 8 if tuplet_type == 3 else 16
                 new_note = PondNote(pitch_universe[idx], duration=note_duration)
                 note_fragment.append_fragment(new_note)
             start_phrase.append_fragment(rest_fragment)
