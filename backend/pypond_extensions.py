@@ -28,7 +28,7 @@ class PondInstrument:
         melody.transpose(self.transposition)
 
 
-class DurationConverter:
+class DurationInterface:
     simple_converter = {0.125: "32",
                         0.25: "16",
                         0.375: "16.",
@@ -71,9 +71,20 @@ class DurationConverter:
         return sum(mapped)
 
     @classmethod
+    def get_remainig_tuplet_time(cls, tuplet):
+        target, base_value, duration = tuplet.data
+        pond_duration = int(base_value) * int(duration)
+        base_duration = cls.get_real_duration(pond_duration)
+        total_duration = cls.get_fragment_duration(tuplet)
+        remaining_beats = target - ((total_duration / base_duration) % target)
+        if remaining_beats == target:
+            remaining_beats = 0
+        return int(remaining_beats), base_duration
+
+    @classmethod
     def get_pond_duration(cls, duration):
         try:
-            return cls.simple_converter[duration]
+            return cls.simple_converter[float(duration)]
         except KeyError:
             raise ValueError(f"DurationConverter currently only accepts "
                              f"values up to the semiquaver. Attempted value: {duration}")
@@ -81,7 +92,7 @@ class DurationConverter:
     @classmethod
     def get_real_duration(cls, duration):
         try:
-            return cls.reverse_simple_converter[duration]
+            return cls.reverse_simple_converter[str(duration)]
         except KeyError:
             raise ValueError(f"DurationConverter requires a valid Lilypond duration. "
                              f"Attempted value: {duration}")
