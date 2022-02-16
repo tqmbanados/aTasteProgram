@@ -2,7 +2,7 @@ from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase
 from pypond import PondScore
 from random import choices, randint
 import json
-from backend.FragmentComposers import ComposerA
+from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB
 
 
 class MainComposer:
@@ -11,10 +11,12 @@ class MainComposer:
         self.stage = 0
         self.direction = 0
         self.command_volume = 0
-        self.composers = {'A': ComposerA()}
+        self.composers = {'0': ComposerEmpty(),
+                          'A': ComposerA(),
+                          'B': ComposerB()}
 
     def compose(self):
-        fragment = 'A'
+        fragment = 'B'
         pitch_universe = [0, 1, 3, 4, 6, 8, 9, 11]
         score = PondScore.PondScore()
         for line in self.composers[fragment].compose(pitch_universe,

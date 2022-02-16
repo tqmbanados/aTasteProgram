@@ -1,18 +1,28 @@
-from pypond.PondFile import PondDoc, PondRender
-from pypond.PondCommand import PondHeader
-from pypond import PondScore
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase, PondTuplet
 from random import choices, randint, choice
-from backend.pypond_extensions import DurationConverter
+from backend.pypond_extensions import DurationConverter, GlissandiCreator
+from abc import ABC
 
 
-class ComposerEmpty:
-    pass
+class ComposerBase(ABC):
+    tuplet_initializers = {'3': (3, 2),
+                           '4': None,
+                           '5': (5, 4),
+                           '6': (6, 4),
+                           '7': (7, 4)
+                           }
 
 
-class ComposerA:
+class ComposerEmpty(ComposerBase):
+    def __init__(self, instruments=None):
+        self.instruments = instruments or []
 
+    def compose_instrument(self):
+        pass
+
+
+class ComposerA(ComposerBase):
     def __init__(self, instruments=None):
         self.instruments = instruments or []
         self.tuplet_weights = {'3': 10,
@@ -20,11 +30,6 @@ class ComposerA:
                                '5': 3,
                                '6': 0
                                }
-        self.tuplet_initializers = {'3': (3, 2),
-                                    '4': None,
-                                    '5': (5, 4),
-                                    '6': (6, 4)
-                                    }
         self.tuplet_silences = {'3': (0, 1),
                                 '4': (0, 0.25, 0.5, 0.75, 1, 1.5),
                                 '5': (0, 1),
@@ -58,6 +63,7 @@ class ComposerA:
             if tuplet[0] in used:
                 return False
             return True
+
         filtered = filter(tuplet_filter, self.tuplet_weights.items())
         types, weights = zip(*filtered)
         return choices(types, weights=weights)[0]
@@ -68,6 +74,7 @@ class ComposerA:
             if silence in used and not silence == 0:
                 return False
             return True
+
         possible = self.tuplet_silences[tuplet_type] + (0,)
         print(possible, used)
         return choice(tuple(filter(silence_filter, possible)))
@@ -208,3 +215,77 @@ class ComposerA:
                 fragment.append_fragment(new_note)
             fragment.ordered_notes()[-1].make_tie(False)
         return fragment
+
+
+class ComposerB(ComposerBase):
+    repeat_durations = (2/7, 0.2, 0.4, 0.25,
+                        1/3, 0.5, 2/3)
+
+    def __init__(self, instruments=None):
+        self.instruments = instruments or []
+        self.tuplet_data = {1/3: ('3', 8, False),
+                            2/3: ('3', 4, True),
+                            0.2: ('5', 16, False),
+                            0.4: ('5', 8, True),
+                            1/6: ('6', 16, False),
+                            1/7: ('7', 16, False),
+                            2/7: ('7', 8, True)}
+
+    def compose(self, pitch_universe, direction, volume):
+        lines = []
+        duration = randint(1, volume + 1) * 3
+        note_duration_idx = randint(0, min(9, direction + 1))
+        note_duration = self.repeat_durations[note_duration_idx]
+        for _ in range(3):
+            new_fragment = self.compose_repeated(pitch_universe, duration, note_duration)
+            new_fragment.transpose(12)
+            lines.append(new_fragment)
+
+        return lines
+
+    def compose_instrument(self):
+        pass
+
+    def compose_repeated(self, pitch_universe, duration,
+                         note_duration, repeated_pitch=None):
+        if repeated_pitch is None:
+            repeated_pitch = choice(pitch_universe)
+        note_number = int(duration // note_duration)
+        try:
+            pond_duration = DurationConverter.get_duration(note_duration)
+            fragment = PondFragment()
+            for _ in range(note_number + 1):
+                new_note = PondNote(repeated_pitch, duration=pond_duration,
+                                    articulation=Articulations.staccato)
+                fragment.append_fragment(new_note)
+
+        except ValueError:
+            tuplet_data = self.tuplet_data[note_duration]
+            tuplet_type = tuplet_data[0]
+            pond_duration = int(tuplet_data[1])
+            fragment = PondTuplet(*self.tuplet_initializers[tuplet_type[0]], 4)
+            if tuplet_data[2]:
+                target = (int(tuplet_type) // 2) * 2
+                current = target // 2
+                for i in range(note_number):
+                    if current == target:
+                        current = 0
+                        new_note = PondNote(repeated_pitch, duration=pond_duration * 2,
+                                            articulation=Articulations.staccato)
+                        fragment.append_fragment(new_note)
+                        fragment.append_fragment(PondNote.create_rest(pond_duration * 2))
+                    else:
+                        new_note = PondNote(repeated_pitch, duration=pond_duration,
+                                            articulation=Articulations.staccato)
+                        fragment.append_fragment(new_note)
+                        current += 1
+            else:
+                for _ in range(note_number):
+                    new_note = PondNote(repeated_pitch, duration=pond_duration,
+                                        articulation=Articulations.staccato)
+                    fragment.append_fragment(new_note)
+
+        return fragment
+
+    def compose_glissando(self):
+        pass
