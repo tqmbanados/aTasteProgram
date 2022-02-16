@@ -17,7 +17,7 @@ class MainComposer:
 
     def compose(self):
         fragment = 'B'
-        pitch_universe = [0, 1, 3, 4, 6, 8, 9, 11]
+        pitch_universe = [0, 1, 3, 4, 6, 8, 9, 11, 12, 13, 15, 16, 18, 20, 21, 23, 24]
         score = PondScore.PondScore()
         for line in self.composers[fragment].compose(pitch_universe,
                                                      self.direction // 2,

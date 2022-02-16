@@ -29,7 +29,7 @@ class PondInstrument:
 
 
 class DurationConverter:
-    simple_durations = {0.125: "32",
+    simple_converter = {0.125: "32",
                         0.25: "16",
                         0.375: "16.",
                         0.5: "8",
@@ -42,17 +42,19 @@ class DurationConverter:
                         6: "1."
                         }
 
+    reverse_simple_converter = {value: key for key, value in simple_converter.items()}
+
     @classmethod
     def get_duration_list(cls, duration):
         if duration % 0.125 or duration > 6:
-            raise ValueError("DurationConverter currently only accepts "
-                             "values up to the semiquaver and dotted whole note")
+            raise ValueError(f"DurationConverter currently only accepts "
+                             f"values up to the semiquaver. Attempted value: {duration}")
         duration_list = []
         current_value = duration
         next_value = 0
         while current_value > 0:
-            if current_value in cls.simple_durations:
-                duration_list.append(cls.simple_durations[current_value])
+            if current_value in cls.simple_converter:
+                duration_list.append(cls.simple_converter[current_value])
                 current_value = next_value
                 next_value = 0
             else:
@@ -61,15 +63,43 @@ class DurationConverter:
         return duration_list
 
     @classmethod
-    def get_duration(cls, duration):
+    def get_fragment_duration(cls, fragment):
+        """
+        Warning: Does not provide correct duration of PondTuplets
+        """
+        mapped = map(lambda x: cls.get_real_duration(x.duration), fragment.ordered_notes())
+        return sum(mapped)
+
+    @classmethod
+    def get_pond_duration(cls, duration):
         try:
-            return cls.simple_durations[duration]
+            return cls.simple_converter[duration]
         except KeyError:
-            raise ValueError("DurationConverter currently only accepts "
-                             "values up to the semiquaver")
+            raise ValueError(f"DurationConverter currently only accepts "
+                             f"values up to the semiquaver. Attempted value: {duration}")
+
+    @classmethod
+    def get_real_duration(cls, duration):
+        try:
+            return cls.reverse_simple_converter[duration]
+        except KeyError:
+            raise ValueError(f"DurationConverter requires a valid Lilypond duration. "
+                             f"Attempted value: {duration}")
 
 
 class GlissandiCreator:
+    glissandoSkipOn = """
+    \\glissando
+    \\override NoteColumn.glissando-skip =  ##t
+    \\hide NoteHead
+    \\override NoteHead.no-ledgers =  ##t
+    """
+    glissandoSkipOff = """
+    \\revert NoteColumn.glissando-skip
+    \\undo \\hide NoteHead
+    \\revert NoteHead.no-ledgers
+    """
+
     @classmethod
     def add_simple_glissando(cls, pond_note: PondNote, direction: int):
         pre_marks = "\\glissando \\cadenzaOn \\hideNotes \n"

@@ -1,8 +1,9 @@
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
-from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase, PondTuplet
-from random import choices, randint, choice
+from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
+from random import choices, randint, choice, uniform
 from backend.pypond_extensions import DurationConverter, GlissandiCreator
 from abc import ABC
+from math import sqrt, modf
 
 
 class ComposerBase(ABC):
@@ -12,6 +13,16 @@ class ComposerBase(ABC):
                            '6': (6, 4),
                            '7': (7, 4)
                            }
+
+    @classmethod
+    def compose_silence(cls, duration=4.):
+        fragment = PondFragment()
+        if duration == 0:
+            return fragment
+        duration_list = DurationConverter.get_duration_list(duration)
+        for silence in duration_list:
+            fragment.append_fragment(PondNote.create_rest(silence))
+        return fragment
 
 
 class ComposerEmpty(ComposerBase):
@@ -102,14 +113,6 @@ class ComposerA(ComposerBase):
         new_fragment.append_fragment(silence_fragment)
         new_fragment.append_fragment(music_fragment)
         return new_fragment
-
-    @classmethod
-    def compose_silence(cls, duration=4):
-        fragment = PondFragment()
-        duration_list = DurationConverter.get_duration_list(duration)
-        for silence in duration_list:
-            fragment.append_fragment(PondNote.create_rest(silence))
-        return fragment
 
     def compose_melodic_fragment(self, pitch_universe, duration=3,
                                  dynamic_climax=False, tuplet_type="4"):
@@ -218,26 +221,33 @@ class ComposerA(ComposerBase):
 
 
 class ComposerB(ComposerBase):
-    repeat_durations = (2/7, 0.2, 0.4, 0.25,
-                        1/3, 0.5, 2/3)
+    repeat_durations = (2 / 7, 0.2, 0.4, 0.25,
+                        1 / 3, 0.5, 2 / 3)
 
     def __init__(self, instruments=None):
         self.instruments = instruments or []
-        self.tuplet_data = {1/3: ('3', 8, False),
-                            2/3: ('3', 4, True),
+        self.tuplet_data = {1 / 3: ('3', 8, False),
+                            2 / 3: ('3', 4, True),
                             0.2: ('5', 16, False),
                             0.4: ('5', 8, True),
-                            1/6: ('6', 16, False),
-                            1/7: ('7', 16, False),
-                            2/7: ('7', 8, True)}
+                            1 / 6: ('6', 16, False),
+                            1 / 7: ('7', 16, False),
+                            2 / 7: ('7', 8, True)}
+        self.dynamic = Dynamics.forte
+
+    @staticmethod
+    def evolution_calculator(volume):
+        return (sqrt(volume) / 3) - 0.5
 
     def compose(self, pitch_universe, direction, volume):
         lines = []
-        duration = randint(1, volume + 1) * 3
-        note_duration_idx = randint(0, min(9, direction + 1))
+        duration = randint(1, volume + 1)
+        note_duration_idx = randint(0, min(6, direction + 4))
         note_duration = self.repeat_durations[note_duration_idx]
+        evolution = self.evolution_calculator(volume)
         for _ in range(3):
-            new_fragment = self.compose_repeated(pitch_universe, duration, note_duration)
+            new_fragment = self.compose_repeated(pitch_universe, duration,
+                                                 note_duration, evolution=evolution)
             new_fragment.transpose(12)
             lines.append(new_fragment)
 
@@ -247,17 +257,29 @@ class ComposerB(ComposerBase):
         pass
 
     def compose_repeated(self, pitch_universe, duration,
-                         note_duration, repeated_pitch=None):
+                         note_duration, repeated_pitch=None,
+                         evolution=0., extended=False):
         if repeated_pitch is None:
-            repeated_pitch = choice(pitch_universe)
+            max_index = min(len(pitch_universe) - 3, abs(int(evolution * len(pitch_universe)))) + 2
+            repeated_pitch = choice(pitch_universe[:max_index])
         note_number = int(duration // note_duration)
         try:
-            pond_duration = DurationConverter.get_duration(note_duration)
+            pond_duration = DurationConverter.get_pond_duration(note_duration)
             fragment = PondFragment()
-            for _ in range(note_number + 1):
+            for _ in range(note_number):
                 new_note = PondNote(repeated_pitch, duration=pond_duration,
                                     articulation=Articulations.staccato)
+                print(evolution)
+                if uniform(0, 1) < evolution:
+                    GlissandiCreator.add_simple_glissando(new_note, -2)
                 fragment.append_fragment(new_note)
+            fragment_duration = DurationConverter.get_fragment_duration(fragment)
+            result = modf(fragment_duration)
+            silence_duration = (1 + note_duration) - result[0]
+            silence_duration = modf(silence_duration)[0]
+            if silence_duration != 0.:
+                silence = self.compose_silence(silence_duration)
+                fragment.insert_fragment(0, silence)
 
         except ValueError:
             tuplet_data = self.tuplet_data[note_duration]
@@ -279,13 +301,53 @@ class ComposerB(ComposerBase):
                                             articulation=Articulations.staccato)
                         fragment.append_fragment(new_note)
                         current += 1
+
             else:
                 for _ in range(note_number):
                     new_note = PondNote(repeated_pitch, duration=pond_duration,
                                         articulation=Articulations.staccato)
                     fragment.append_fragment(new_note)
 
+            if extended:
+                glissando = self.long_glissando(repeated_pitch, 2)
+                fragment.append_fragment(glissando)
+
         return fragment
 
-    def compose_glissando(self):
-        pass
+    def compose_glissando(self, pitch_universe, duration, evolution=0,
+                          start_pitch=None, start_position=0):
+
+        if start_pitch is None:
+            middle_point = len(pitch_universe) // 2
+            start_pitch = choice(pitch_universe[-middle_point:-1])
+        new_glissando = self.long_glissando(start_pitch, duration, start_position)
+        new_glissando.ordered_notes()[0].dynamic = self.dynamic
+        return new_glissando
+
+    @classmethod
+    def long_glissando(cls, start_pitch, duration=3, start_position=0):
+        initial_duration = 1 - start_position
+        if start_position:
+            end_pond_duration = DurationConverter.get_pond_duration(start_position)
+        else:
+            end_pond_duration = "4"
+        pond_duration = DurationConverter.get_pond_duration(initial_duration)
+        start_note = PondNote(start_pitch, duration=pond_duration)
+        start_note.post_marks.append(GlissandiCreator.glissandoSkipOn)
+
+        fragment = PondFragment()
+        fragment.append_fragment(start_note)
+        beat_amount = int(duration - start_position)
+        end_pitch = PondPitch.from_absolute_int(start_pitch - 2)
+
+        for i in range(beat_amount):
+            new_note = PondNote(start_pitch)
+            fragment.append_fragment(new_note)
+        if start_position:
+            new_note = PondNote(end_pitch, duration=end_pond_duration)
+            fragment.append_fragment(new_note)
+        else:
+            fragment.ordered_notes()[-1].pitch = end_pitch
+        fragment.ordered_notes()[-1].pre_marks.append(GlissandiCreator.glissandoSkipOff)
+        fragment.ordered_notes()[-1].set_ignore_accidental(True)
+        return fragment
