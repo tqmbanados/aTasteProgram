@@ -63,9 +63,10 @@ class DurationInterface:
         return duration_list
 
     @classmethod
-    def get_fragment_duration(cls, fragment):
+    def get_fragment_duration(cls, fragment, tuplet_tiime=False):
         """
-        Warning: Does not provide correct duration of PondTuplets
+        Warning: Only provides correct Tuplet duration for **complete** tuplets.
+        Use "get_remaining_tuplet_time" to view if they are complete.
         """
         mapped = map(lambda x: cls.get_real_duration(x.duration), fragment.ordered_notes())
         return sum(mapped)
@@ -75,7 +76,7 @@ class DurationInterface:
         target, base_value, duration = tuplet.data
         pond_duration = int(base_value) * int(duration)
         base_duration = cls.get_real_duration(pond_duration)
-        total_duration = cls.get_fragment_duration(tuplet)
+        total_duration = cls.get_fragment_duration(tuplet, True)
         remaining_beats = target - ((total_duration / base_duration) % target)
         if remaining_beats == target:
             remaining_beats = 0
