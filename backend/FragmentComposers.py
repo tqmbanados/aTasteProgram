@@ -29,11 +29,12 @@ class ComposerBase(ABC):
     def complete_silence(cls, fragment):
         final_fragment = PondFragment()
         final_fragment.append_fragment(fragment)
-        duration = DurationInterface.get_fragment_duration(final_fragment)
-        start = 1 - (duration % 1)
-        rest = 6 - (duration - start)
+        duration = fragment.real_duration
+        remaining = 6 - duration
+        start, rest = modf(remaining)
         final_fragment.append_fragment(cls.compose_silence(start))
         final_fragment.append_fragment(cls.compose_silence(rest))
+        print(duration, remaining, final_fragment.real_duration)
         return final_fragment
 
 
@@ -113,7 +114,7 @@ class ComposerA(ComposerBase):
                            empty=False, silence=0, trill=False, climax=False,
                            tuplet_type="4", extended=False):
         if empty:
-            return self.compose_silence(duration)
+            return self.compose_silence(4)
         remaining_duration = max(duration - silence, 1)
         if trill:
             music_fragment = self.compose_trill_fragment(pitch_universe,
@@ -128,7 +129,7 @@ class ComposerA(ComposerBase):
                                                            extended=extended)
         music_fragment.transpose(12)
         if not silence:
-            return music_fragment
+            return self.complete_silence(music_fragment)
         assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
 
         silence_fragment = self.compose_silence(silence)
@@ -150,7 +151,7 @@ class ComposerA(ComposerBase):
             note_duration = 16
         else:
             main_fragment = PondTuplet(*self.tuplet_initializers[tuplet_type],
-                                       duration=4)
+                                       group_duration=4)
             note_duration = 8 if tuplet_type == '3' else 16
         for i in range(silence_number):
             new_silence = PondNote(-1, note_duration)
@@ -242,8 +243,7 @@ class ComposerA(ComposerBase):
             start_phrase.append_fragment(notes_fragment)
             start_phrase.ordered_notes()[0].dynamic = Dynamics.crescendo_hairpin
         fragment.append_fragment(start_phrase)
-        start_position = (silence +
-                          DurationInterface.get_fragment_duration(start_phrase)) % 1
+        start_position = (silence + start_phrase.real_duration) % 1
         start_duration = 1 - start_position
         start_pond_duration = DurationInterface.get_pond_duration(start_duration)
         remaining_duration = max(0.5, duration - (len(start_phrase) // tuplet_type))
@@ -264,7 +264,7 @@ class ComposerA(ComposerBase):
 
         if extended:
             extended_fragment = PondPhrase()
-            total_duration = DurationInterface.get_fragment_duration(fragment) + silence
+            total_duration = fragment.real_duration + silence
             remaining_duration = 1 - (total_duration % 1)
             if remaining_duration == 0:
                 remaining_duration = 1
@@ -360,7 +360,7 @@ class ComposerB(ComposerBase):
                 if uniform(0, 1) < evolution:
                     GlissandiCreator.add_simple_glissando(new_note, -2)
                 fragment.append_fragment(new_note)
-            fragment_duration = DurationInterface.get_fragment_duration(fragment)
+            fragment_duration = fragment.real_duration
             result = modf(fragment_duration)
             silence_duration = 1 - result[0]
             silence_duration = modf(silence_duration)[0]
@@ -415,7 +415,7 @@ class ComposerB(ComposerBase):
         fragment = self.long_glissando(start_pitch, duration, start_position)
         fragment.ordered_notes()[0].dynamic = self.dynamic
         if extended:
-            duration = DurationInterface.get_fragment_duration(fragment)
+            duration = fragment.real_duration
             new_start = (duration + start_position + 0.5) % 1
             fragment.append_fragment(self.compose_silence(0.5))
             jump = randint(1, 2 + int(evolution) * 3)
