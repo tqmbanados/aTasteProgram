@@ -125,7 +125,8 @@ class ComposerA(ComposerBase):
                                                            duration=remaining_duration,
                                                            climax=climax,
                                                            tuplet_type=tuplet_type,
-                                                           extended=extended)
+                                                           extended=extended,
+                                                           evolution=evolution)
         music_fragment.transpose(12)
         if not silence:
             return self.complete_silence(music_fragment)
@@ -139,12 +140,14 @@ class ComposerA(ComposerBase):
                                  climax=False, tuplet_type="4",
                                  extended=False, evolution=0):
         note_number = int(tuplet_type) * int(duration)
-        silence_percent = max(min(0.2 - uniform(0, evolution), 1), 0)
-        silence_number = int(note_number * silence_percent)
+        silent_beat = randint(0, 1)
+        silence_number = int((0.95 - uniform(0, evolution)) * int(tuplet_type))
+        fragment = PondFragment()
+        if silent_beat:
+            fragment.append_fragment(self.compose_silence(1))
         note_number -= silence_number
         middle_note = note_number // 2
         index_route = self.build_index_route(note_number + 1, len(pitch_universe))
-        fragment = PondFragment()
         if tuplet_type == '4':
             main_fragment = PondFragment()
             note_duration = 16

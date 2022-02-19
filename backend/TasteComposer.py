@@ -16,7 +16,7 @@ class MainComposer:
                           'B': ComposerB()}
 
     def compose(self):
-        fragment = 'B'
+        fragment = 'A'
         pitch_universe = [0, 1, 3, 4, 6, 8, 9, 11, 12, 13, 15, 16, 18, 20, 21, 23, 24]
         score = PondScore.PondScore()
         time_signature = PondScore.PondTimeSignature(6, 4)
