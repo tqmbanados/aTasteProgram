@@ -34,7 +34,6 @@ class ComposerBase(ABC):
         start, rest = modf(remaining)
         final_fragment.append_fragment(cls.compose_silence(start))
         final_fragment.append_fragment(cls.compose_silence(rest))
-        print(duration, remaining, final_fragment.real_duration)
         return final_fragment
 
 
