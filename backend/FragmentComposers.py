@@ -6,6 +6,7 @@ from backend.pypond_extensions import GlissandiCreator
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
 from pypond.PondCore import DurationInterface
+from pypond.PondCommand import PondMarkup
 
 
 class ComposerBase(ABC):
@@ -39,14 +40,33 @@ class ComposerBase(ABC):
 
 
 class ComposerEmpty(ComposerBase):
-    def __init__(self, instruments=None):
-        self.instruments = instruments or []
+    instructions = {'english': '"Breathe naturally. '
+                               'Expel air with force through instrument."',
+                    'español': '"Respira naturalmente. '
+                               'Expulsa el aire con fuerza a través del instrumento."'}
 
-    def compose(self):
-        pass
+    def __init__(self, instruments=None, language='english'):
+        self.instruments = instruments or []
+        self.language = language
+
+    def compose(self, *args, **kwargs):
+        lines = []
+        for _ in range(3):
+            new_line = self.compose_instrument()
+            lines.append(new_line)
+        return lines
 
     def compose_instrument(self):
-        pass
+        instructions = self.instructions[self.language]
+        smaller = PondMarkup.small
+        markup = PondMarkup(instructions, smaller, smaller)
+        markup_string = markup.add_to_note()
+        fragment = PondFragment()
+        rest = PondNote(-1, "1.")
+        rest.post_marks.append(markup_string)
+        rest.hide_note()
+        fragment.append_fragment(rest)
+        return fragment
 
 
 class ComposerA(ComposerBase):
