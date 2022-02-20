@@ -26,7 +26,11 @@ class MainComposer:
 
     @direction.setter
     def direction(self, value):
-        self.__direction = value
+        if value > 5:
+            self.__direction = 0
+            self.stage += 1
+        else:
+            self.__direction = value
 
     def update_command_volume(self):
         diffs = self.timer.last_values()
@@ -55,7 +59,7 @@ class MainComposer:
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
-        self.direction += randint(-1, 2)
+        self.direction += randint(-2, 3)
         self.update_command_volume()
         return score
 

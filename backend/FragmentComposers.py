@@ -28,14 +28,20 @@ class ComposerBase(ABC):
         return fragment
 
     @classmethod
-    def complete_silence(cls, fragment):
+    def complete_silence(cls, fragment, stop_trill=False):
         final_fragment = PondFragment()
         final_fragment.append_fragment(fragment)
         duration = fragment.real_duration
         remaining = 6 - duration
         start, rest = modf(remaining)
-        final_fragment.append_fragment(cls.compose_silence(start))
-        final_fragment.append_fragment(cls.compose_silence(rest))
+        silence_fragment = PondFragment()
+        silence_fragment.append_fragment(cls.compose_silence(start))
+        silence_fragment.append_fragment(cls.compose_silence(rest))
+        first = silence_fragment.get_note(0)
+        first.post_marks.append(MiscMarks.end_tag)
+        if stop_trill and silence_fragment.ordered_notes():
+            first.trill_marks(False)
+        final_fragment.append_fragment(silence_fragment)
         return final_fragment
 
 
@@ -127,7 +133,7 @@ class ComposerA(ComposerBase):
             else:
                 return self.compose_silence(6.)
         remaining_duration = max(duration - silence, 1)
-        if voice_type == 1:
+        if voice_type == 2:
             music_fragment = self.compose_trill_fragment(pitch_universe,
                                                          evolution=evolution,
                                                          duration=remaining_duration,
@@ -140,20 +146,20 @@ class ComposerA(ComposerBase):
                                                            extended=extended,
                                                            evolution=evolution)
         music_fragment.transpose(12)
-        if not silence:
-            return self.complete_silence(music_fragment)
-        assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
+        if silence:
+            silence_fragment = self.compose_silence(silence)
+            music_fragment.insert_fragment(0, silence_fragment)
 
-        silence_fragment = self.compose_silence(silence)
-        music_fragment.insert_fragment(0, silence_fragment)
-        return self.complete_silence(music_fragment)
+        assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
+        return self.complete_silence(music_fragment, True)
 
     def compose_melodic_fragment(self, pitch_universe, duration=3,
                                  climax=False, tuplet_type="4",
                                  extended=False, evolution=0):
         note_number = int(tuplet_type) * int(duration)
         silent_beat = randint(0, 1)
-        silence_number = int((0.95 - uniform(0, evolution)) * int(tuplet_type))
+        silence_number = int((0.6 - uniform(0, evolution)) * int(tuplet_type))
+        print(evolution, silence_number)
         fragment = PondFragment()
         if silent_beat:
             fragment.append_fragment(self.compose_silence(1))
@@ -269,9 +275,8 @@ class ComposerA(ComposerBase):
                 new_note = PondNote(start_pitch, duration=note_part_duration,
                                     tie=True)
                 fragment.append_fragment(new_note)
-            last_note = fragment.ordered_notes()[-1]
+            last_note = fragment.get_note(-1)
             last_note.make_tie(False)
-            last_note.trill_marks(False)
 
         if extended:
             extended_fragment = PondPhrase()
@@ -292,8 +297,10 @@ class ComposerA(ComposerBase):
                     end = not end
                 new_note = PondNote(pitch, 32)
                 extended_fragment.append_fragment(new_note)
-            extended_fragment.ordered_notes()[0].expressions = Dynamics.crescendo_hairpin
-            last_note = extended_fragment.ordered_notes()[-1]
+            first_note = extended_fragment.get_note(0)
+            first_note.expressions = Dynamics.crescendo_hairpin
+            first_note.trill_marks(False)
+            last_note = extended_fragment.get_note(-1)
             last_note.dynamic = Dynamics.sforzando
             last_note.articulation = Articulations.staccato
 
@@ -319,23 +326,29 @@ class ComposerB(ComposerBase):
     def evolution_calculator(volume):
         return (sqrt(volume) / 3) - 0.5
 
-    def compose(self, pitch_universe, direction, volume):
+    def compose(self, pitch_universe, direction, volume, voice_data):
         lines = []
-        duration = min(4, randint(1, volume + 1))
+        duration = min(4, randint(1, direction + 1))
         evolution = volume
         extended = randint(5, 10) < direction
 
-        for _ in range(3):
-            repeated = choice([1, 0, 0])
+        for voice_type, silence in voice_data:
             new_fragment = self.compose_instrument(pitch_universe, duration,
-                                                   repeated, evolution, extended)
+                                                   voice_type, silence, evolution,
+                                                   extended)
             lines.append(new_fragment)
 
         return lines
 
-    def compose_instrument(self, pitch_universe, duration, repeated=False,
-                           evolution=0., extended=False):
-        if repeated:
+    def compose_instrument(self, pitch_universe, duration, voice_type,
+                           silence, evolution=0., extended=False):
+        if voice_type == 0:
+            return self.compose_silence(6.)
+        if silence:
+            start_silence = self.compose_silence(silence)
+        else:
+            start_silence = PondFragment()
+        if voice_type == 1:
             max_index = min(len(pitch_universe) - 3, abs(int(evolution * len(pitch_universe)))) + 2
             main_pitch = choice(pitch_universe[:max_index])
             note_duration_idx = randint(0, min(6, duration + 1))
@@ -345,15 +358,16 @@ class ComposerB(ComposerBase):
                                                  extended)
         else:
             gliss_duration = min(duration, 2)
-            silence_duration = choice([0, 0.25, 0.5, 0.75, 1]) + (duration - gliss_duration)
+            silence_duration = choice([0, 0.25, 0.5, 0.75]) + (duration - gliss_duration)
             middle_point = len(pitch_universe) // 2
             main_pitch = choice(pitch_universe[-middle_point:-1])
             new_fragment = self.compose_glissando(main_pitch, gliss_duration,
-                                                  evolution, silence_duration % 1,
+                                                  evolution, silence_duration,
                                                   extended)
             if silence_duration > 0:
-                silence = self.compose_silence(silence_duration)
-                new_fragment.insert_fragment(0, silence)
+                start_silence.append_fragment(self.compose_silence(silence_duration))
+
+        new_fragment.insert_fragment(0, start_silence)
         new_fragment.transpose(12)
         return self.complete_silence(new_fragment)
 
