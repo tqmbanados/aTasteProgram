@@ -1,6 +1,6 @@
 from abc import ABC
 from math import sqrt, modf
-from random import choices, randint, choice, uniform
+from random import choices, randint, choice, uniform, shuffle
 
 from backend.pypond_extensions import GlissandiCreator
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
@@ -52,12 +52,13 @@ class ComposerEmpty(ComposerBase):
     def compose(self, *args, **kwargs):
         lines = []
         for _ in range(3):
-            new_line = self.compose_instrument()
+            new_line = self.compose_instrument(self.language)
             lines.append(new_line)
         return lines
 
-    def compose_instrument(self):
-        instructions = self.instructions[self.language]
+    @classmethod
+    def compose_instrument(cls, language):
+        instructions = cls.instructions[language]
         smaller = PondMarkup.small
         markup = PondMarkup(instructions, smaller, smaller)
         markup_string = markup.add_to_note()
@@ -72,71 +73,61 @@ class ComposerEmpty(ComposerBase):
 class ComposerA(ComposerBase):
     def __init__(self, instruments=None):
         self.instruments = instruments or []
-        self.tuplet_weights = {'3': 10,
-                               '4': 5,
-                               '5': 3,
-                               '6': 0
-                               }
         self.dynamic = Dynamics.pianissimo
+        self.language = "english"
 
     @staticmethod
     def evolution_calculator(volume):
         return sqrt(volume) / 4
 
-    def compose(self, pitch_universe, direction, volume):
-        evolution = self.evolution_calculator(volume)
+    @classmethod
+    def get_tuplet_weights(cls, volume):
+        tuplet_weights = {'3': 1 - volume,
+                          '4': 0.8 - (volume * 0.8),
+                          '5': 0.2 + (volume * 0.8),
+                          '6': 0 + volume
+                          }
+
+        return tuplet_weights
+
+    def compose(self, pitch_universe, direction, volume, voice_data):
         duration = min(5, randint(2, 2 + direction))
         fragments = []
         used_tuplets = []
-        used_silences = []
-        for _ in range(3):
-            extended = randint(5, 10) < direction
-            empty = not randint(0, direction)
-            trill = bool(randint(0, 1))
-            climax = True if volume > 4 else False
-            tuplet_type = self.tuplet_type(used_tuplets)
-            silence = self.silence_type(used_silences, not trill)
-            new_fragment = self.compose_instrument(pitch_universe, evolution,
-                                                   duration, empty, silence,
-                                                   trill, climax, tuplet_type,
+        for voice_type, silence in voice_data:
+            extended = randint(2, 5) < direction
+            climax = True if direction > 3 else False
+            tuplet_type = self.tuplet_type(used_tuplets, volume)
+            new_fragment = self.compose_instrument(pitch_universe, volume,
+                                                   duration, voice_type,
+                                                   silence, climax, tuplet_type,
                                                    extended=extended)
-            if not trill and not empty:
+            if voice_type == 2:
                 used_tuplets.append(tuplet_type)
-            used_silences.append(silence)
             fragments.append(new_fragment)
 
         return fragments
 
-    def tuplet_type(self, used):
+    def tuplet_type(self, used, volume):
         def tuplet_filter(tuplet):
             if tuplet[0] in used:
                 return False
             return True
 
-        filtered = filter(tuplet_filter, self.tuplet_weights.items())
+        filtered = filter(tuplet_filter, self.get_tuplet_weights(volume).items())
         types, weights = zip(*filtered)
         return choices(types, weights=weights)[0]
 
-    @staticmethod
-    def silence_type(used, convert=False):
-        def silence_filter(silence):
-            if silence in used and not silence == 0:
-                return False
-            return True
-
-        possible = (0, 0.5, 1, 1.5)
-        silence_type = choice(tuple(filter(silence_filter, possible)))
-        if convert:
-            return int(silence_type)
-        return silence_type
-
     def compose_instrument(self, pitch_universe, evolution, duration,
-                           empty=False, silence=0, trill=False, climax=False,
+                           voice_type=1, silence=0, climax=False,
                            tuplet_type="4", extended=False):
-        if empty:
-            return self.compose_silence(4)
+        if voice_type == 0:
+            if not extended:
+                return ComposerEmpty.compose_instrument(self.language)
+            else:
+                return self.compose_silence(6.)
         remaining_duration = max(duration - silence, 1)
-        if trill:
+        if voice_type == 1:
             music_fragment = self.compose_trill_fragment(pitch_universe,
                                                          evolution=evolution,
                                                          duration=remaining_duration,
@@ -212,10 +203,6 @@ class ComposerA(ComposerBase):
 
         return fragment
 
-    def get_tuplet_type(self):
-        types, weights = zip(*self.tuplet_weights.items())
-        return choices(types, weights=weights)[0]
-
     @classmethod
     def build_index_route(cls, note_amount, max_index):
         route_fragments = ((1, 1, 1, -2, 1),
@@ -282,7 +269,9 @@ class ComposerA(ComposerBase):
                 new_note = PondNote(start_pitch, duration=note_part_duration,
                                     tie=True)
                 fragment.append_fragment(new_note)
-            fragment.ordered_notes()[-1].make_tie(False)
+            last_note = fragment.ordered_notes()[-1]
+            last_note.make_tie(False)
+            last_note.trill_marks(False)
 
         if extended:
             extended_fragment = PondPhrase()
@@ -333,7 +322,7 @@ class ComposerB(ComposerBase):
     def compose(self, pitch_universe, direction, volume):
         lines = []
         duration = min(4, randint(1, volume + 1))
-        evolution = self.evolution_calculator(volume)
+        evolution = volume
         extended = randint(5, 10) < direction
 
         for _ in range(3):
