@@ -17,6 +17,19 @@ class ComposerBase(ABC):
                            '6': (6, 4),
                            '7': (7, 4)
                            }
+    repeat_durations = (2 / 7, 0.2, 0.4, 0.25,
+                        1 / 3, 0.5, 0.75, 2 / 3)
+    tuplet_data = {1 / 3: ('3', 8, False),
+                   2 / 3: ('3', 4, True),
+                   0.2: ('5', 16, False),
+                   0.4: ('5', 8, True),
+                   1 / 6: ('6', 16, False),
+                   1 / 7: ('7', 16, False),
+                   2 / 7: ('7', 8, True)}
+
+    def __init__(self, instruments=None):
+        self.instruments = instruments or []
+        self.dynamic = Dynamics.pianissimo
 
     @classmethod
     def compose_silence(cls, duration=4.):
@@ -46,133 +59,14 @@ class ComposerBase(ABC):
         final_fragment.append_fragment(silence_fragment)
         return final_fragment
 
-
-class ComposerEmpty(ComposerBase):
-    instructions = {'english': '"Breathe naturally. '
-                               'Expel air with force through instrument."',
-                    'español': '"Respira naturalmente. '
-                               'Expulsa el aire con fuerza a través del instrumento."'}
-
-    def __init__(self, instruments=None, language='english'):
-        self.instruments = instruments or []
-        self.language = language
-
-    def compose(self, *args, **kwargs):
-        lines = []
-        for _ in range(3):
-            new_line = self.compose_instrument(self.language)
-            lines.append(new_line)
-        return lines
-
-    @classmethod
-    def compose_instrument(cls, language):
-        instructions = cls.instructions[language]
-        smaller = PondMarkup.small
-        markup = PondMarkup(instructions, smaller, smaller)
-        markup_string = markup.add_to_note()
-        fragment = PondFragment()
-        rest = PondNote(-1, "1.")
-        rest.post_marks.append(markup_string)
-        rest.hide_note()
-        fragment.append_fragment(rest)
-        return fragment
-
-
-class ComposerA(ComposerBase):
-    def __init__(self, instruments=None):
-        self.instruments = instruments or []
-        self.dynamic = Dynamics.pianissimo
-        self.language = "english"
-
-    @staticmethod
-    def volume_calculator(volume):
-        return sqrt(volume) / 4
-
-    @classmethod
-    def get_tuplet_weights(cls, volume):
-        tuplet_weights = {'3': 1 - volume,
-                          '4': 0.8 - (volume * 0.8),
-                          '5': 0.2 + (volume * 0.8),
-                          '6': 0 + volume
-                          }
-
-        return tuplet_weights
-
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        fragments = []
-        used_tuplets = []
-        pitch = 0
-        max_duration = max(3, direction + 2)
-        for voice_type, silence in voice_data:
-            extended = randint(2, 5) < direction
-            climax = True if direction >= 3 else False
-            tuplet_type = self.tuplet_type(used_tuplets, volume)
-            if voice_type == 1:
-                used_tuplets.append(tuplet_type)
-            elif voice_type == 2:
-                mode_pitch = self.get_mode(fragments)
-                pitch = mode_pitch
-            new_fragment = self.compose_instrument(pitch_universe, volume, voice_type,
-                                                   silence, max_duration, climax,
-                                                   tuplet_type, pitch, extended)
-            fragments.append(new_fragment)
-
-        return fragments
-
-    def tuplet_type(self, used, volume):
-        def tuplet_filter(tuplet):
-            if tuplet[0] in used:
-                return False
-            return True
-
-        filtered = filter(tuplet_filter, self.get_tuplet_weights(volume).items())
-        types, weights = zip(*filtered)
-        return choices(types, weights=weights)[0]
-
-    @classmethod
-    def get_mode(cls, lines):
-        all_notes = filter(lambda x: not x.is_rest(),
-                           lines[0].ordered_notes() + lines[1].ordered_notes())
-        all_pitches = list(map(lambda x: x.absolute_int, all_notes))
-        print(all_pitches)
-        return mode(all_pitches)
-
-    def compose_instrument(self, pitch_universe, volume,
-                           voice_type=1, silence=0, max_duration=3, climax=False,
-                           tuplet_type="4", pitch=0, extended=False):
-        if voice_type == 0:
-            if not extended:
-                return ComposerEmpty.compose_instrument(self.language)
-            else:
-                return self.compose_silence(6.)
-        duration = randint(3, max_duration)
-
-        if voice_type == 2:
-            music_fragment = self.compose_trill_fragment(pitch_universe,
-                                                         volume=volume,
-                                                         duration=duration,
-                                                         extended=extended,
-                                                         start_pitch=pitch)
-        else:
-            music_fragment = self.compose_melodic_fragment(pitch_universe,
-                                                           duration=duration,
-                                                           climax=climax,
-                                                           tuplet_type=tuplet_type,
-                                                           extended=extended,
-                                                           volume=volume)
-        if silence:
-            silence_fragment = self.compose_silence(silence)
-            music_fragment.insert_fragment(0, silence_fragment)
-
-        assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
-        return self.complete_silence(music_fragment, True)
-
     def compose_melodic_fragment(self, pitch_universe, duration=3,
                                  climax=False, tuplet_type="4",
-                                 extended=False, volume=0):
+                                 extended=False, volume=0.):
+        duration = duration - climax - extended
+        assert duration > 1
         note_number = int(tuplet_type) * int(duration)
         silent_beat = randint(0, 1)
-        silence_number = int((0.6 - uniform(0, volume)) * int(tuplet_type))
+        silence_number = int(abs(0.7 - volume) * int(tuplet_type))
         note_number -= silence_number
         fragment = PondFragment()
         if extended:
@@ -214,7 +108,7 @@ class ComposerA(ComposerBase):
         last_pitch = pitch_universe[index_route[-1]]
         if extended and climax:
             note_duration = choice((0.2, 0.25, 1 / 3, 0.5, 0.75))
-            repeated = ComposerB.compose_repeated(last_pitch, 1, note_duration)
+            repeated = self.compose_repeated(last_pitch, 1, note_duration)
             first_note = repeated.ordered_notes()[0]
             first_note.dynamic = Dynamics.sforzando
             first_note.expressions = Dynamics.diminuendo_hairpin
@@ -328,70 +222,6 @@ class ComposerA(ComposerBase):
             last_note.articulation = Articulations.staccato
 
         return fragment
-
-
-class ComposerB(ComposerBase):
-    repeat_durations = (2 / 7, 0.2, 0.4, 0.25,
-                        1 / 3, 0.5, 0.75, 2 / 3)
-    tuplet_data = {1 / 3: ('3', 8, False),
-                   2 / 3: ('3', 4, True),
-                   0.2: ('5', 16, False),
-                   0.4: ('5', 8, True),
-                   1 / 6: ('6', 16, False),
-                   1 / 7: ('7', 16, False),
-                   2 / 7: ('7', 8, True)}
-
-    def __init__(self, instruments=None):
-        self.instruments = instruments or []
-        self.dynamic = Dynamics.forte
-
-    @staticmethod
-    def volume_calculator(volume):
-        return (sqrt(volume) / 3) - 0.5
-
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        lines = []
-        duration = min(4, randint(1, direction + 1))
-        volume = volume
-        extended = randint(5, 10) < direction
-
-        for voice_type, silence in voice_data:
-            new_fragment = self.compose_instrument(pitch_universe, duration,
-                                                   voice_type, silence, volume,
-                                                   extended)
-            lines.append(new_fragment)
-
-        return lines
-
-    def compose_instrument(self, pitch_universe, duration, voice_type,
-                           silence, volume=0., extended=False):
-        if voice_type == 0:
-            return self.compose_silence(6.)
-        if silence:
-            start_silence = self.compose_silence(silence)
-        else:
-            start_silence = PondFragment()
-        if voice_type == 1:
-            max_index = min(len(pitch_universe) - 3, abs(int(volume * len(pitch_universe)))) + 2
-            main_pitch = choice(pitch_universe[:max_index])
-            note_duration_idx = randint(0, min(6, duration + 1))
-            note_duration = self.repeat_durations[note_duration_idx]
-            new_fragment = self.compose_repeated(main_pitch, duration,
-                                                 note_duration, volume,
-                                                 extended)
-        else:
-            gliss_duration = min(duration, 2)
-            silence_duration = choice([0, 0.25, 0.5, 0.75])
-            middle_point = len(pitch_universe) // 2
-            main_pitch = choice(pitch_universe[-middle_point:-1])
-            new_fragment = self.compose_glissando(main_pitch, gliss_duration,
-                                                  volume, silence_duration,
-                                                  extended)
-            if silence_duration > 0:
-                start_silence.append_fragment(self.compose_silence(silence_duration))
-
-        new_fragment.insert_fragment(0, start_silence)
-        return self.complete_silence(new_fragment)
 
     @classmethod
     def compose_repeated(cls, repeated_pitch, duration,
@@ -518,3 +348,194 @@ class ComposerB(ComposerBase):
         last_note.set_ignore_accidental(True)
         last_note.hide_notehead()
         return fragment
+
+
+class ComposerEmpty(ComposerBase):
+    instructions = {'english': '"Breathe naturally. '
+                               'Expel air with force through instrument."',
+                    'español': '"Respira naturalmente. '
+                               'Expulsa el aire con fuerza a través del instrumento."'}
+
+    def __init__(self, instruments=None, language='english'):
+        super().__init__(instruments)
+        self.language = language
+
+    def compose(self, *args, **kwargs):
+        lines = []
+        for _ in range(3):
+            new_line = self.compose_instrument(self.language)
+            lines.append(new_line)
+        return lines
+
+    @classmethod
+    def compose_instrument(cls, language):
+        instructions = cls.instructions[language]
+        smaller = PondMarkup.small
+        markup = PondMarkup(instructions, smaller, smaller)
+        markup_string = markup.add_to_note()
+        fragment = PondFragment()
+        rest = PondNote(-1, "1.")
+        rest.post_marks.append(markup_string)
+        rest.hide_note()
+        fragment.append_fragment(rest)
+        return fragment
+
+
+class ComposerA(ComposerBase):
+    def __init__(self, instruments=None):
+        super().__init__(instruments)
+        self.dynamic = Dynamics.pianissimo
+        self.language = "english"
+
+    @staticmethod
+    def volume_calculator(volume):
+        return sqrt(volume) / 4
+
+    @classmethod
+    def get_tuplet_weights(cls, volume):
+        tuplet_weights = {'3': 1 - volume,
+                          '4': 0.8 - (volume * 0.8),
+                          '5': 0.2 + (volume * 0.8),
+                          '6': 0 + volume
+                          }
+
+        return tuplet_weights
+
+    def compose(self, pitch_universe, direction, volume, voice_data):
+        fragments = []
+        used_tuplets = []
+        pitch = 0
+        min_duration = max(3, direction)
+        for voice_type, silence in voice_data:
+            extended = randint(2, 5) < direction
+            climax = True if direction >= 3 else False
+            tuplet_type = self.tuplet_type(used_tuplets, volume)
+            if voice_type == 1:
+                used_tuplets.append(tuplet_type)
+            elif voice_type == 2:
+                mode_pitch = self.get_mode(fragments)
+                pitch = mode_pitch
+            new_fragment = self.compose_instrument(pitch_universe, volume, voice_type,
+                                                   silence, min_duration, climax,
+                                                   tuplet_type, pitch, extended)
+            fragments.append(new_fragment)
+
+        return fragments
+
+    def tuplet_type(self, used, volume):
+        def tuplet_filter(tuplet):
+            if tuplet[0] in used:
+                return False
+            return True
+
+        filtered = filter(tuplet_filter, self.get_tuplet_weights(volume).items())
+        types, weights = zip(*filtered)
+        return choices(types, weights=weights)[0]
+
+    @classmethod
+    def get_mode(cls, lines):
+        all_notes = filter(lambda x: not x.is_rest(),
+                           lines[0].ordered_notes() + lines[1].ordered_notes())
+        all_pitches = list(map(lambda x: x.absolute_int, all_notes))
+        return mode(all_pitches)
+
+    def compose_instrument(self, pitch_universe, volume,
+                           voice_type=1, silence=0, min_duration=3, climax=False,
+                           tuplet_type="4", pitch=0, extended=False):
+        if voice_type == 0:
+            if not extended:
+                return ComposerEmpty.compose_instrument(self.language)
+            else:
+                return self.compose_silence(6.)
+        remaining_duration = 6 - silence
+        duration = randint(min_duration, remaining_duration)
+
+        if voice_type == 2:
+            music_fragment = self.compose_trill_fragment(pitch_universe,
+                                                         volume=volume,
+                                                         duration=duration,
+                                                         extended=extended,
+                                                         start_pitch=pitch)
+        else:
+            music_fragment = self.compose_melodic_fragment(pitch_universe,
+                                                           duration=duration,
+                                                           climax=climax,
+                                                           tuplet_type=tuplet_type,
+                                                           extended=extended,
+                                                           volume=volume)
+        if silence:
+            silence_fragment = self.compose_silence(silence)
+            music_fragment.insert_fragment(0, silence_fragment)
+
+        assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
+        return self.complete_silence(music_fragment, True)
+
+
+class ComposerB(ComposerBase):
+
+    def __init__(self, instruments=None):
+        super().__init__(instruments)
+        self.dynamic = Dynamics.forte
+
+    @staticmethod
+    def volume_calculator(volume):
+        return (sqrt(volume) / 3) - 0.5
+
+    def compose(self, pitch_universe, direction, volume, voice_data):
+        lines = []
+        duration = min(4, randint(1, direction + 1))
+        volume = volume
+        extended = randint(5, 10) < direction
+
+        for voice_type, silence in voice_data:
+            new_fragment = self.compose_instrument(pitch_universe, duration,
+                                                   voice_type, silence, volume,
+                                                   extended)
+            lines.append(new_fragment)
+
+        return lines
+
+    def compose_instrument(self, pitch_universe, duration, voice_type,
+                           silence, volume=0., extended=False):
+        if voice_type == 0:
+            if extended:
+                tuplet_type = choice("3", "4", "5")
+                return self.compose_melodic_fragment(pitch_universe, duration, False,
+                                                     tuplet_type, False, volume)
+            return self.compose_silence(6.)
+        if silence:
+            start_silence = self.compose_silence(silence)
+        else:
+            start_silence = PondFragment()
+        if voice_type == 1:
+            max_index = min(len(pitch_universe) - 3, abs(int(volume * len(pitch_universe)))) + 2
+            main_pitch = choice(pitch_universe[:max_index])
+            note_duration_idx = randint(0, min(6, duration + 1))
+            note_duration = self.repeat_durations[note_duration_idx]
+            new_fragment = self.compose_repeated(main_pitch, duration,
+                                                 note_duration, volume,
+                                                 extended)
+        else:
+            gliss_duration = min(duration, 2)
+            silence_duration = choice([0, 0.25, 0.5, 0.75])
+            middle_point = len(pitch_universe) // 2
+            main_pitch = choice(pitch_universe[-middle_point:-1])
+            new_fragment = self.compose_glissando(main_pitch, gliss_duration,
+                                                  volume, silence_duration,
+                                                  extended)
+            if silence_duration > 0:
+                start_silence.append_fragment(self.compose_silence(silence_duration))
+
+        new_fragment.insert_fragment(0, start_silence)
+        return self.complete_silence(new_fragment)
+
+
+class ComposerC:
+    def __init__(self, instruments):
+        super().__init__(instruments)
+
+
+class ComposerD:
+    def __init__(self, instruments):
+        super().__init__(instruments)
+
