@@ -22,7 +22,7 @@ class MainComposer:
 
     @property
     def direction(self):
-        return abs(self.__direction)
+        return abs(int(self.__direction))
 
     @direction.setter
     def direction(self, value):
@@ -49,28 +49,31 @@ class MainComposer:
         score = PondScore.PondScore()
         time_signature = PondScore.PondTimeSignature(6, 4)
         voice_data = self.get_voice_data(self.stage)
-        for line in self.composers[self.stage].compose(pitch_universe,
-                                                       self.direction,
-                                                       self.command_volume,
-                                                       voice_data):
+        lines = self.composers[self.stage].compose(pitch_universe,
+                                                   self.direction,
+                                                   self.command_volume,
+                                                   voice_data)
+        shuffle(lines)
+        for line in lines:
+            line.transpose(12)
             staff = PondScore.PondStaff()
             staff.time_signature = time_signature
 
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
-        self.direction += randint(-2, 3)
+        self.direction += choice([0, 0, 1, 1, 1])
         self.update_command_volume()
         return score
 
     def get_voice_data(self, composer):
         types = self.get_composer_data(composer, 'VOICE_TYPES')[str(self.direction)]
         voices = choice(types)
-        shuffle(voices)
 
         all_silences = [[1, 2, 2], [1, 1, 2], [0, 1, 2],
-                        [0, 1, 1], [0, 0, 1], [0, 0, 1], [0, 1, 1]]
-        silence_possibles = all_silences[self.stage:]
+                        [0, 1, 1], [0, 1, 1], [0, 0, 1], [0, 0, 1]]
+        min_index = max(self.stage, self.direction)
+        silence_possibles = all_silences[min_index:]
         silences = choice(silence_possibles)
         shuffle(silences)
         return list(zip(voices, silences))
