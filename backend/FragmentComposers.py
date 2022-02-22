@@ -122,7 +122,8 @@ class ComposerBase(ABC):
         return fragment
 
     def compose_target_melodic_fragment(self, pitch_universe, target_index,
-                                        duration=3, tuplet_type="4", volume=0.0):
+                                        duration=3, tuplet_type="4", volume=0.0,
+                                        extension_type=0):
         assert duration > 1
         assert target_index < len(pitch_universe), (f"target: {target_index}, "
                                                     f"max: {len(pitch_universe)}")
@@ -158,10 +159,17 @@ class ComposerBase(ABC):
             melodic_fragment.append_fragment(new_note)
         fragment.append_fragment(melodic_fragment)
         target_pitch = pitch_universe[target_index]
-        glissando_fragment = self.long_glissando(duration=2,
+        if extension_type == 0:
+            bonus_fragment = self.long_glissando(duration=2,
                                                  start_pitch=target_pitch)
-        glissando_fragment.get_note(0).dynamic = Dynamics.fortissimo
-        fragment.append_fragment(glissando_fragment)
+        elif extension_type == 1:
+            note_duration = choice(self.repeat_durations)
+            bonus_fragment = self.compose_repeated(target_pitch, 2, note_duration, volume)
+        else:
+            bonus_fragment = PondNote(target_pitch, 6,
+                                      articulation=Articulations.accent)
+        bonus_fragment.get_note(0).dynamic = Dynamics.fortissimo
+        fragment.append_fragment(bonus_fragment)
         return fragment
 
     @classmethod
@@ -485,8 +493,8 @@ class ComposerA(ComposerBase):
         index_range = min(max(5,
                               int(max_index * volume * 1.5)),
                           max_index)
-        max_start = min(max_index - index_range, int(max_index * volume))
-        start = randint(1, max_start)
+        max_start = min(max_index - index_range, int(max_index * volume) + 1)
+        start = randint(0, max_start)
         return pitch_universe[start: start + index_range]
 
     @classmethod
@@ -588,20 +596,22 @@ class ComposerB(ComposerBase):
 
 
 class ComposerC(ComposerBase):
-    def __init__(self, instruments=None):
+    def __init__(self, instruments=None, language="english"):
         super().__init__(instruments)
+        self.language = language
 
     def compose(self, pitch_universe, direction, volume, voice_data):
         lines = []
-        voice_data = [(0, 0), (1, 0), (2, 1)]
+        silence = 0
         max_index = len(pitch_universe) - 1
-        pitch_index = randint(max_index // 2, max_index)
-        for silence, fragment_type in voice_data:
+        pitch_index = max_index - int(direction * 1.5)
+        for _, fragment_type in voice_data:
             new_fragment = self.compose_instrument(pitch_universe, volume,
                                                    fragment_type, silence,
                                                    pitch_index)
-            pitch_index -= 1
             lines.append(new_fragment)
+            pitch_index -= 1
+            silence += 1
         return lines
 
     def compose_instrument(self, pitch_universe, volume, fragment_type,
@@ -609,15 +619,21 @@ class ComposerC(ComposerBase):
         fragment = PondFragment()
         silence_fragment = self.compose_silence(silence)
         duration = 3
-        tuplet_type = choice(["4", "5", "6"])
+        print(fragment_type)
+        if fragment_type == 3:
+            return ComposerEmpty.compose_instrument(self.language)
+        tuplet_type = choice(["3", "4", "5", "6"])
         melodic_fragment = self.compose_target_melodic_fragment(pitch_universe, main_index,
                                                                 duration, tuplet_type,
-                                                                volume)
+                                                                volume, fragment_type)
         fragment.append_fragment(silence_fragment)
         fragment.append_fragment(melodic_fragment)
         return self.complete_silence(fragment, max_duration=8)
 
 
-class ComposerD:
+class ComposerD(ComposerBase):
     def __init__(self, instruments=None):
         super().__init__(instruments)
+
+    def compose(self, pitch_universe, direction, volume, voice_data):
+        pass

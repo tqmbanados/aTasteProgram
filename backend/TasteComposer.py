@@ -1,25 +1,32 @@
-from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase
 from pypond import PondScore
-from random import choices, randint, choice, shuffle
+from pypond.PondMusic import PondMelody
 import json
-from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
-from time import time
 from functools import reduce
+from random import choice, shuffle
+from time import time
+
+from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
+from pypond import PondScore
 
 
 class MainComposer:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             self.data = json.load(file)
-        self.stage = 3
+        self.stage = 0
         self.__direction = 0
         self.command_volume = 0.0
-        self.composers = {0: ComposerEmpty(),
+        empty = ComposerEmpty()
+        self.composers = {0: empty,
                           1: ComposerA(),
                           2: ComposerB(),
-                          3: ComposerC()}
+                          3: ComposerC(),
+                          4: empty,
+                          5: ComposerD()}
         self.timer = Timer()
         self.timer.start()
+        self.complete_score = PondScore.PondScore()
+        self.all_instruments = [PondMelody() for _ in range(3)]
 
     @property
     def direction(self):
@@ -27,7 +34,7 @@ class MainComposer:
 
     @direction.setter
     def direction(self, value):
-        if value > 5 or self.stage == 0:
+        if value > 5 or self.stage in (0, 4):
             self.__direction = 0
             self.stage += 1
         else:
@@ -58,6 +65,9 @@ class MainComposer:
                                                    voice_data)
         shuffle(lines)
         for line in lines:
+            line_idx = lines.index(line)
+            line.time_string = time_signature.as_string()
+            self.all_instruments[line_idx].append_fragment(line)
             line.transpose(12)
             staff = PondScore.PondStaff()
             staff.time_signature = time_signature
