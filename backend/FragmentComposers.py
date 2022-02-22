@@ -46,11 +46,11 @@ class ComposerBase(ABC):
         return fragment
 
     @classmethod
-    def complete_silence(cls, fragment, stop_trill=False):
+    def complete_silence(cls, fragment, stop_trill=False, max_duration=6):
         final_fragment = PondFragment()
         final_fragment.append_fragment(fragment)
         duration = fragment.real_duration
-        remaining = 6 - duration
+        remaining = max_duration - duration
         start, rest = modf(remaining)
         silence_fragment = PondFragment()
         silence_fragment.append_fragment(cls.compose_silence(start))
@@ -69,7 +69,6 @@ class ComposerBase(ABC):
         duration = duration - climax - extended
         assert duration > 1
         note_number = int(tuplet_type) * int(duration)
-        silent_beat = randint(0, 1)
         silence_number = int(abs(0.7 - volume) * int(tuplet_type))
         note_number -= silence_number
         fragment = PondFragment()
@@ -77,8 +76,6 @@ class ComposerBase(ABC):
             duration -= 2
         elif climax:
             duration -= 1
-        if silent_beat:
-            fragment.append_fragment(self.compose_silence(1))
         middle_note = note_number // 2
         index_route = self.build_index_route(note_number + 1, len(pitch_universe))
         if tuplet_type == '4':
@@ -124,30 +121,29 @@ class ComposerBase(ABC):
 
         return fragment
 
-    def compose_target_melodic_fragment(self, pitch_universe, duration=3,
-                                        tuplet_type="4",
-                                        volume=0.):
+    def compose_target_melodic_fragment(self, pitch_universe, target_index,
+                                        duration=3, tuplet_type="4", volume=0.0):
         assert duration > 1
+        assert target_index < len(pitch_universe), (f"target: {target_index}, "
+                                                    f"max: {len(pitch_universe)}")
         note_number = int(tuplet_type) * int(duration)
-        silent_beat = randint(0, 1)
-        silence_number = int(abs(0.7 - volume) * int(tuplet_type))
+        silence_number = int(abs(0.5 - volume) * int(tuplet_type))
         note_number -= silence_number
         fragment = PondFragment()
-        if silent_beat:
-            fragment.append_fragment(self.compose_silence(1))
-        middle_note = note_number // 2
-        index_route = self.build_index_route(note_number + 1, len(pitch_universe))
+        index_route = self.build_index_route(note_number + 1,
+                                             len(pitch_universe),
+                                             target_index)
         if tuplet_type == '4':
-            main_fragment = PondFragment()
+            melodic_fragment = PondFragment()
             note_duration = 16
         else:
-            main_fragment = PondTuplet(*self.tuplet_initializers[tuplet_type],
-                                       group_duration=4)
+            melodic_fragment = PondTuplet(*self.tuplet_initializers[tuplet_type],
+                                          group_duration=4)
             note_duration = 8 if tuplet_type == '3' else 16
         for i in range(silence_number):
             new_silence = PondNote(-1, note_duration)
             new_silence.make_rest()
-            main_fragment.append_fragment(new_silence)
+            melodic_fragment.append_fragment(new_silence)
         for i in range(note_number):
             idx = index_route[i]
             new_note = PondNote(pitch_universe[idx],
@@ -157,18 +153,19 @@ class ComposerBase(ABC):
                 new_note.phrase_data('begin')
             if i == 1:
                 new_note.expressions = Dynamics.crescendo_hairpin
-            if i == middle_note:
-                new_note.expressions = Dynamics.diminuendo_hairpin
             if i == note_number - 1:
                 new_note.phrase_data('end')
-            main_fragment.append_fragment(new_note)
-        fragment.append_fragment(main_fragment)
-        last_pitch = pitch_universe[index_route[-1]]
-
+            melodic_fragment.append_fragment(new_note)
+        fragment.append_fragment(melodic_fragment)
+        target_pitch = pitch_universe[target_index]
+        glissando_fragment = self.long_glissando(duration=2,
+                                                 start_pitch=target_pitch)
+        glissando_fragment.get_note(0).dynamic = Dynamics.fortissimo
+        fragment.append_fragment(glissando_fragment)
         return fragment
 
     @classmethod
-    def build_index_route(cls, note_amount, max_index):
+    def build_index_route(cls, note_amount, max_index, target_index=None):
         route_fragments = ((1, 1, 1, -2, 1),
                            (1, 1, -1, 1, 1),
                            (-2, 1, 1, 1, 1),
@@ -189,6 +186,15 @@ class ComposerBase(ABC):
                 route_fragment = iter(choice(route_fragments))
                 addition = next(route_fragment)
             current = cls.next_index_number(current, addition, max_index)
+        if target_index is not None and target_index != index_route[-1]:
+            diff = target_index - index_route[-1]
+            addition = diff // abs(diff)
+            for idx in range(len(index_route)):
+                index = index_route[idx]
+                for _ in range(abs(diff)):
+                    index = cls.next_index_number(index, addition,
+                                                  max_index)
+                index_route[idx] = index
         return index_route
 
     @staticmethod
@@ -369,28 +375,21 @@ class ComposerBase(ABC):
     @classmethod
     def long_glissando(cls, start_pitch, duration=3, start_position=0):
         initial_duration = 1 - start_position
-        if start_position:
-            end_pond_duration = DurationInterface.get_pond_duration(start_position)
-        else:
-            end_pond_duration = "4"
-        pond_duration = DurationInterface.get_pond_duration(initial_duration)
-        start_note = PondNote(start_pitch, duration=pond_duration)
-        start_note.post_marks.append(GlissandiCreator.glissandoSkipOn)
+        print(duration)
 
         fragment = PondFragment()
-        fragment.append_fragment(start_note)
-        beat_amount = int(duration - start_position)
+        duration_list = DurationInterface.get_duration_list(duration,
+                                                            initial_duration % 1,
+                                                            max_duration=1)
         end_pitch = PondPitch.from_absolute_int(start_pitch - 2)
+        print(duration_list)
+        for note_duration in duration_list:
+            new_note = PondNote(start_pitch, duration=note_duration)
+            fragment.append_fragment(new_note)
 
-        for i in range(beat_amount):
-            new_note = PondNote(start_pitch)
-            fragment.append_fragment(new_note)
-        if start_position:
-            new_note = PondNote(end_pitch, duration=end_pond_duration)
-            fragment.append_fragment(new_note)
-        else:
-            fragment.ordered_notes()[-1].pitch = end_pitch
+        fragment.get_note(0).post_marks.append(GlissandiCreator.glissandoSkipOn)
         last_note = fragment.ordered_notes()[-1]
+        last_note.pitch = end_pitch
         last_note.pre_marks.append(GlissandiCreator.glissandoSkipOff)
         last_note.set_ignore_accidental(True)
         last_note.hide_notehead()
@@ -588,14 +587,37 @@ class ComposerB(ComposerBase):
         return self.complete_silence(new_fragment)
 
 
-class ComposerC:
-    def __init__(self, instruments):
+class ComposerC(ComposerBase):
+    def __init__(self, instruments=None):
         super().__init__(instruments)
 
     def compose(self, pitch_universe, direction, volume, voice_data):
-        pass
+        lines = []
+        voice_data = [(0, 0), (1, 0), (2, 1)]
+        max_index = len(pitch_universe) - 1
+        pitch_index = randint(max_index // 2, max_index)
+        for silence, fragment_type in voice_data:
+            new_fragment = self.compose_instrument(pitch_universe, volume,
+                                                   fragment_type, silence,
+                                                   pitch_index)
+            pitch_index -= 1
+            lines.append(new_fragment)
+        return lines
+
+    def compose_instrument(self, pitch_universe, volume, fragment_type,
+                           silence, main_index):
+        fragment = PondFragment()
+        silence_fragment = self.compose_silence(silence)
+        duration = 3
+        tuplet_type = choice(["4", "5", "6"])
+        melodic_fragment = self.compose_target_melodic_fragment(pitch_universe, main_index,
+                                                                duration, tuplet_type,
+                                                                volume)
+        fragment.append_fragment(silence_fragment)
+        fragment.append_fragment(melodic_fragment)
+        return self.complete_silence(fragment, max_duration=8)
 
 
 class ComposerD:
-    def __init__(self, instruments):
+    def __init__(self, instruments=None):
         super().__init__(instruments)

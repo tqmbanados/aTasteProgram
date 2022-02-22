@@ -2,7 +2,7 @@ from pypond.PondMusic import PondMelody, PondNote, PondFragment, PondPhrase
 from pypond import PondScore
 from random import choices, randint, choice, shuffle
 import json
-from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB
+from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
 from time import time
 from functools import reduce
 
@@ -11,12 +11,13 @@ class MainComposer:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             self.data = json.load(file)
-        self.stage = 0
+        self.stage = 3
         self.__direction = 0
         self.command_volume = 0.0
         self.composers = {0: ComposerEmpty(),
                           1: ComposerA(),
-                          2: ComposerB()}
+                          2: ComposerB(),
+                          3: ComposerC()}
         self.timer = Timer()
         self.timer.start()
 
@@ -48,7 +49,8 @@ class MainComposer:
         self.timer.new_time()
         pitch_universe = self.get_composer_data(self.stage, "PITCH_UNIVERSE")
         score = PondScore.PondScore()
-        time_signature = PondScore.PondTimeSignature(6, 4)
+        time_signature_initializers = self.get_composer_data(self.stage, "TIME_SIGNATURE")
+        time_signature = PondScore.PondTimeSignature(*time_signature_initializers)
         voice_data = self.get_voice_data(self.stage)
         lines = self.composers[self.stage].compose(pitch_universe,
                                                    self.direction,
