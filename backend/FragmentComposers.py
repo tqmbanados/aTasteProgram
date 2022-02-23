@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from math import sqrt, modf
 from random import choices, randint, choice, uniform
 
-from backend.pypond_extensions import GlissandiCreator, LilypondScripts
+from backend.pypond_extensions import LilypondScripts
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
 from pypond.PondCore import DurationInterface
@@ -218,7 +218,9 @@ class ComposerBase(ABC):
                                volume=2., tuplet_type=4, extended=False, silence=0,
                                start_pitch=None):
         if not start_pitch:
-            max_index = 1 + 3 * int(volume * (len(pitch_universe) - 1)) // 2
+            multiplier = volume + ((1 - volume) / 2)
+            size = len(pitch_universe) - 2
+            max_index = int(multiplier * size)
             start_idx = randint(0, max_index)
             trill_idx = start_idx + 1
             start_pitch, trill_pitch = pitch_universe[start_idx], pitch_universe[trill_idx]
@@ -304,7 +306,7 @@ class ComposerBase(ABC):
                 new_note = PondNote(repeated_pitch, duration=pond_duration,
                                     articulation=Articulations.staccato)
                 if uniform(0, 1) < volume:
-                    GlissandiCreator.add_simple_glissando(new_note, -2)
+                    LilypondScripts.add_simple_glissando(new_note, -2)
                 fragment.append_fragment(new_note)
             fragment_duration = fragment.real_duration
             result = modf(fragment_duration)
@@ -400,10 +402,10 @@ class ComposerBase(ABC):
             new_note = PondNote(start_pitch, duration=note_duration)
             fragment.append_fragment(new_note)
 
-        fragment.get_note(0).post_marks.append(GlissandiCreator.glissandoSkipOn)
+        LilypondScripts.glissando(fragment.get_note(0), True)
         last_note = fragment.ordered_notes()[-1]
         last_note.pitch = end_pitch
-        last_note.pre_marks.append(GlissandiCreator.glissandoSkipOff)
+        LilypondScripts.glissando(last_note, False)
         last_note.set_ignore_accidental(True)
         last_note.hide_notehead()
         return fragment

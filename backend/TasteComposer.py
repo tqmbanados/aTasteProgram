@@ -12,7 +12,7 @@ class MainComposer:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             self.data = json.load(file)
-        self.stage = 0
+        self.stage = 2
         self.__direction = 0
         self.command_volume = 0.0
         empty = ComposerEmpty()
