@@ -23,9 +23,11 @@ class PyPondWriter(QObject):
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
 
-    @pyqtSlot()
-    def render_image(self):
+    @pyqtSlot(bool)
+    def render_image(self, render):
         score = self.composer.compose()
+        if not render:
+            return
         self.pond_doc.score = score
         self.render.update(self.pond_doc.create_file())
         self.render.write()

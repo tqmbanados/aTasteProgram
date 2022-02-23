@@ -1,15 +1,16 @@
 from PyQt5.QtWidgets import (QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QGridLayout)
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 from os import path
 from parameters import SCORE_IMAGE_PATH, window_geometry
 from frontend.QPondScores import ScoreLabel
 from time import sleep
+from random import uniform
 
 
 class PyPondWindow(QWidget):
-    signal_get_next = pyqtSignal()
+    signal_get_next = pyqtSignal(bool)
     signal_write_score = pyqtSignal()
 
     def __init__(self):
@@ -18,6 +19,7 @@ class PyPondWindow(QWidget):
         self.music_labels = {}
         self.next = QPushButton("Next", self)
         self.end = QPushButton("End", self)
+        self.auto = QPushButton("Auto-generate", self)
         self.init_gui()
         self.__next = 0
 
@@ -48,6 +50,7 @@ class PyPondWindow(QWidget):
         h_box_button.addStretch()
         h_box_button.addWidget(self.next)
         h_box_button.addWidget(self.end)
+        h_box_button.addWidget(self.auto)
         h_box_button.addStretch()
 
         hbox_main = QHBoxLayout()
@@ -58,10 +61,11 @@ class PyPondWindow(QWidget):
         self.setStyleSheet("background-color: white")
         self.next.clicked.connect(self.get_next)
         self.end.clicked.connect(self.write_score)
+        self.auto.clicked.connect(self.automatic_score)
 
     @pyqtSlot()
     def get_next(self):
-        self.signal_get_next.emit()
+        self.signal_get_next.emit(True)
 
     @pyqtSlot()
     def update_label(self):
@@ -78,3 +82,21 @@ class PyPondWindow(QWidget):
     def write_score(self):
         self.signal_write_score.emit()
         self.close()
+
+    def automatic_score(self):
+        new_thread = Generator(self.signal_get_next, self.signal_write_score, self)
+        new_thread.start()
+
+
+class Generator(QThread):
+    def __init__(self, signal_next, signal_write, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.signal_next = signal_next
+        self.signal_write = signal_write
+
+    def run(self):
+        for _ in range(100):
+            sleep_time = uniform(0.3, 1.5)
+            sleep(sleep_time)
+            self.signal_next.emit(False)
+        self.signal_write.emit()

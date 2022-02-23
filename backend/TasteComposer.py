@@ -36,7 +36,6 @@ class MainComposer:
             score.add_staff(staff)
         return score
 
-
     @property
     def direction(self):
         return abs(int(self.__direction))
@@ -70,7 +69,7 @@ class MainComposer:
         voice_data = self.get_voice_data(self.stage)
         lines = self.composers[self.stage].compose(pitch_universe,
                                                    self.direction,
-                                                   self.command_volume,
+                                                   self.get_volume(),
                                                    voice_data)
         shuffle(lines)
         for line in lines:
