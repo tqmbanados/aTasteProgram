@@ -1,6 +1,38 @@
 from pypond.PondMusic import PondNote
 
 
+class LilypondScripts:
+    square_head = ('headSquare', '{\\once \\override NoteHead.stencil = #ly:text-interface::print\n'
+                                 '\\once \\override NoteHead.text = '
+                                 '#(markup #:musicglyph "noteheads.s2laWalker" )\n'
+                                 '}')
+    paper_settings = """system-system-spacing =
+    #'((basic-distance . 25) 
+       (minimum-distance . 18)
+       (padding . 2)
+       (stretchability . 60)) 
+markup-system-spacing = 
+    #'((basic-distance . 40)
+      (minimum-distance . 18))"""
+    slash_head = ('headSlash', '{\\once \\override NoteHead.stencil = #ly:text-interface::print\n'
+                               '\\once \\override NoteHead.text = '
+                               '#(markup #:musicglyph "noteheads.s0slash" )\n'
+                               '}')
+
+    @classmethod
+    def make_square(cls, pond_note):
+        pond_note.pre_marks.append("\\headSquare ")
+
+    @classmethod
+    def make_slash(cls, pond_note):
+        pond_note.pre_marks.append("\\headSlash ")
+
+    @classmethod
+    def commands_dict(cls):
+        return {cls.square_head[0]: cls.square_head[1],
+                cls.slash_head[0]: cls.slash_head[1]}
+
+
 class PondInstrument:
     def __init__(self, lower_range, higher_range, transposition=0,
                  increased_range=0):

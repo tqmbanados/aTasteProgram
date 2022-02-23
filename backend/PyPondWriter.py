@@ -2,6 +2,7 @@ from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 from pypond.PondFile import PondDoc, PondRender
 from pypond.PondCommand import PondHeader, PondPaper
 from pypond import PondScore
+from backend.pypond_extensions import LilypondScripts
 from backend.TasteComposer import MainComposer
 from os import path
 
@@ -15,14 +16,17 @@ class PyPondWriter(QObject):
         self.pond_doc = PondDoc()
         self.main_document = MainDoc()
         self.composer = MainComposer(path.join('backend', "data.json"))
+        self.init_doc()
+
+    def init_doc(self):
+        self.pond_doc.header = PondHeader()
+        for name, function in LilypondScripts.commands_dict().items():
+            self.pond_doc.add_function(name, function)
 
     @pyqtSlot()
     def render_image(self):
         score = self.composer.compose()
-        header = PondHeader()
-
         self.pond_doc.score = score
-        self.pond_doc.header = header
         self.render.update(self.pond_doc.create_file())
         self.render.write()
         self.render.render()
@@ -38,7 +42,7 @@ class PyPondWriter(QObject):
 class MainDoc:
     def __init__(self):
         self.document = PondDoc()
-        self.custom_commands = {}
+        self.custom_commands = LilypondScripts.commands_dict()
         self.init_doc()
 
     def init_doc(self):
@@ -48,9 +52,10 @@ class MainDoc:
         paper.update_margins({"top-margin": 10,
                               "left-margin": 15,
                               "right-margin": 15})
+        paper.additional_data.append(LilypondScripts.paper_settings)
         self.document.paper = paper
         self.document.header = header
-        for name, function in self.custom_commands:
+        for name, function in self.custom_commands.items():
             self.document.add_function(name, function)
 
     def create_file(self):

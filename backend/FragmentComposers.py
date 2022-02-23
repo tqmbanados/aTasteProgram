@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from math import sqrt, modf
 from random import choices, randint, choice, uniform
 
-from backend.pypond_extensions import GlissandiCreator
+from backend.pypond_extensions import GlissandiCreator, LilypondScripts
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
 from pypond.PondCore import DurationInterface
@@ -422,11 +422,25 @@ class ComposerEmpty(ComposerBase):
     def compose(self, *args, **kwargs):
         lines = []
         for _ in range(3):
-            new_line = self.compose_instrument(self.language)
+            new_line = self.compose_instrument()
             lines.append(new_line)
         return lines
 
     @classmethod
+    def compose_instrument(cls, measure_length=6):
+        fragment = PondFragment()
+        silence_duration = DurationInterface.get_pond_duration((measure_length - 4) // 2)
+        for _ in range(2):
+            new_rest = PondNote.create_rest(silence_duration)
+            new_rest.hide_note()
+            fragment.append_fragment(new_rest)
+        new_note = PondNote(11, "1")
+        LilypondScripts.make_slash(new_note)
+        fragment.insert_fragment(1, new_note)
+        return fragment
+
+
+"""    @classmethod
     def compose_instrument(cls, language):
         instructions = cls.instructions[language]
         smaller = PondMarkup.small
@@ -438,6 +452,7 @@ class ComposerEmpty(ComposerBase):
         rest.hide_note()
         fragment.append_fragment(rest)
         return fragment
+"""
 
 
 class ComposerA(ComposerBase):
@@ -514,7 +529,7 @@ class ComposerA(ComposerBase):
                            tuplet_type="4", pitch=0, extended=False):
         if voice_type == 0:
             if not extended:
-                return ComposerEmpty.compose_instrument(self.language)
+                return ComposerEmpty.compose_instrument()
             else:
                 return self.compose_silence(6.)
         remaining_duration = 6 - silence
@@ -626,7 +641,7 @@ class ComposerC(ComposerBase):
         duration = 3
         print(fragment_type)
         if fragment_type == 3:
-            return ComposerEmpty.compose_instrument(self.language)
+            return ComposerEmpty.compose_instrument(8)
         tuplet_type = choice(["3", "4", "5", "6"])
         melodic_fragment = self.compose_target_melodic_fragment(pitch_universe, main_index,
                                                                 duration, tuplet_type,
