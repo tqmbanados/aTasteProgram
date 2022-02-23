@@ -14,6 +14,7 @@ if __name__ == "__main__":
     window = PyPondWindow()
     render = PyPondWriter()
     window.signal_get_next.connect(render.render_image)
+    window.signal_write_score.connect(render.write_score)
     render.file_completed.connect(window.update_label)
     window.show()
     sys.exit(app.exec())

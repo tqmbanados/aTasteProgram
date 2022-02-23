@@ -224,6 +224,7 @@ class ComposerBase(ABC):
             start_idx = pitch_universe.index(start_pitch)
             trill_idx = start_idx + 1
             trill_pitch = pitch_universe[trill_idx]
+        duration -= 0.5 * int(not extended)
         fragment = PondFragment()
         start_phrase = PondFragment()
         if start_idx >= tuplet_type + 1:
@@ -281,6 +282,10 @@ class ComposerBase(ABC):
             last_note = extended_fragment.get_note(-1)
             last_note.dynamic = Dynamics.sforzando
             last_note.articulation = Articulations.staccato
+        else:
+            new_note = PondNote(-1, duration=8)
+            new_note.trill_marks(False)
+            fragment.append_fragment(new_note)
 
         return fragment
 
@@ -462,8 +467,8 @@ class ComposerA(ComposerBase):
         min_duration = max(3, direction)
         pitch_universe = self.get_pitch_universe(pitch_universe, volume)
         for voice_type, silence in voice_data:
-            extended = randint(2, 5) < direction
-            climax = True if direction >= 3 else False
+            extended = randint(3, 5) < direction
+            climax = True if direction > 3 else False
             tuplet_type = self.tuplet_type(used_tuplets, volume)
             if voice_type == 1:
                 used_tuplets.append(tuplet_type)

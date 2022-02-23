@@ -5,16 +5,19 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from os import path
 from parameters import SCORE_IMAGE_PATH, window_geometry
 from frontend.QPondScores import ScoreLabel
+from time import sleep
 
 
 class PyPondWindow(QWidget):
     signal_get_next = pyqtSignal()
+    signal_write_score = pyqtSignal()
 
     def __init__(self):
         super().__init__()
         self.setGeometry(*window_geometry)
         self.music_labels = {}
         self.next = QPushButton("Next", self)
+        self.end = QPushButton("End", self)
         self.init_gui()
         self.__next = 0
 
@@ -44,15 +47,17 @@ class PyPondWindow(QWidget):
         h_box_button = QHBoxLayout()
         h_box_button.addStretch()
         h_box_button.addWidget(self.next)
+        h_box_button.addWidget(self.end)
         h_box_button.addStretch()
 
         hbox_main = QHBoxLayout()
-        hbox_main.addLayout(score_layout)
-        hbox_main.addLayout(h_box_button)
+        hbox_main.addLayout(score_layout, 5)
+        hbox_main.addLayout(h_box_button, 1)
 
         self.setLayout(hbox_main)
         self.setStyleSheet("background-color: white")
         self.next.clicked.connect(self.get_next)
+        self.end.clicked.connect(self.write_score)
 
     @pyqtSlot()
     def get_next(self):
@@ -69,3 +74,7 @@ class PyPondWindow(QWidget):
         image_path = path.join(*SCORE_IMAGE_PATH)
         label_update.update_label(image_path)
         label_update.show()
+
+    def write_score(self):
+        self.signal_write_score.emit()
+        self.close()

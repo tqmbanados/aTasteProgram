@@ -1,4 +1,3 @@
-from pypond import PondScore
 from pypond.PondMusic import PondMelody
 import json
 from functools import reduce
@@ -25,8 +24,18 @@ class MainComposer:
                           5: ComposerD()}
         self.timer = Timer()
         self.timer.start()
-        self.complete_score = PondScore.PondScore()
         self.all_instruments = [PondMelody() for _ in range(3)]
+
+    def render_complete_score(self):
+        score = PondScore.PondScore()
+        for line in self.all_instruments:
+            staff = PondScore.PondStaff()
+            staff.time_signature = PondScore.PondTimeSignature(6, 4)
+            staff.add_voice(line)
+            staff.add_with_command("omit", "TimeSignature")
+            score.add_staff(staff)
+        return score
+
 
     @property
     def direction(self):
@@ -75,7 +84,7 @@ class MainComposer:
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
-        self.direction += choice([-1, 0, 1, 1])
+        self.direction += choice([-1, -1, 0, 0,  1, 1, 1])
         self.update_command_volume()
         return score
 
