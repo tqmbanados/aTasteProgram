@@ -81,7 +81,6 @@ class PyPondWindow(QWidget):
 
     def write_score(self):
         self.signal_write_score.emit()
-        self.close()
 
     def automatic_score(self):
         new_thread = Generator(self.signal_get_next, self.signal_write_score, self)
@@ -95,7 +94,7 @@ class Generator(QThread):
         self.signal_write = signal_write
 
     def run(self):
-        for _ in range(100):
+        for _ in range(150):
             sleep_time = uniform(0.3, 1.5)
             sleep(sleep_time)
             self.signal_next.emit(False)

@@ -289,6 +289,7 @@ class ComposerBase(ABC):
         else:
             new_note = PondNote(-1, duration=8)
             new_note.trill_marks(False)
+            new_note.hide_note()
             fragment.append_fragment(new_note)
 
         return fragment
@@ -395,7 +396,7 @@ class ComposerBase(ABC):
 
         fragment = PondFragment()
         duration_list = DurationInterface.get_duration_list(duration,
-                                                            initial_duration % 1,
+                                                            start=initial_duration % 1,
                                                             max_duration=1)
         end_pitch = PondPitch.from_absolute_int(start_pitch - 2)
         for note_duration in duration_list:
@@ -405,15 +406,15 @@ class ComposerBase(ABC):
         LilypondScripts.glissando(fragment.get_note(0), True)
         last_note = fragment.ordered_notes()[-1]
         last_note.pitch = end_pitch
-        LilypondScripts.glissando(last_note, False)
-        last_note.set_ignore_accidental(True)
         last_note.hide_notehead()
+        last_note.ignore_accidental()
+        LilypondScripts.glissando(last_note, False)
         return fragment
 
     def compose_noise_note(self, duration, pitch):
         duration_list = DurationInterface.get_duration_list(duration,
-                                                            max_duration=1,
-                                                            simple=True)
+                                                            simple=True,
+                                                            max_duration=1)
         fragment = PondFragment()
         for duration in duration_list:
             new_note = PondNote(pitch, duration, tie=True)
@@ -679,7 +680,7 @@ class ComposerD(ComposerBase):
     def compose(self, pitch_universe, direction, volume, voice_data):
         lines = []
         max_duration = max(3, 7 - direction)
-        max_index = int(len(pitch_universe) * volume)
+        max_index = max(4, int(len(pitch_universe) * volume))
         for voice_type, silence in voice_data:
             duration = randint(3, max_duration)
             new_fragment = self.compose_instrument(pitch_universe[:max_index],
@@ -697,16 +698,16 @@ class ComposerD(ComposerBase):
             pitch = choice(available)
             melodic_fragment = self.compose_noise_note(duration, pitch)
         elif voice_type == 1:
-            tuplet_type = choice("4", "5", "6")
+            tuplet_type = choice(["4", "5", "6"])
             melodic_fragment = self.compose_melodic_fragment(pitch_universe,
                                                              duration,
                                                              tuplet_type=tuplet_type,
                                                              volume=volume,
                                                              reverse=True)
         else:
-            return ComposerEmpty.compose_instrument()
+            return ComposerEmpty.compose_instrument(8)
         silence_fragment = self.compose_silence(silence)
         fragment.append_fragment(silence_fragment)
         fragment.append_fragment(melodic_fragment)
 
-        return fragment
+        return self.complete_silence(fragment, max_duration=8)

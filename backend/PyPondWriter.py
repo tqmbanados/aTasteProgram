@@ -36,6 +36,7 @@ class PyPondWriter(QObject):
 
     @pyqtSlot()
     def write_score(self):
+        print("Writing Complete Score")
         self.main_document.document.score = self.composer.render_complete_score()
         self.render.update(self.main_document.create_file())
         self.render.write()

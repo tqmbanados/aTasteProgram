@@ -19,13 +19,15 @@ class LilypondScripts:
                                '#(markup #:musicglyph "noteheads.s0slash" )\n'
                                '}')
 
-    gliss_on = ("glissOn", "\\override NoteColumn.glissando-skip =  ##t\n"
+    gliss_on = ("glissOn", "{\\override NoteColumn.glissando-skip =  ##t\n"
                            "    \\hide NoteHead\n"
-                           "    \\override NoteHead.no-ledgers =  ##t\n")
+                           "    \\omit Accidental\n"
+                           "    \\override NoteHead.no-ledgers =  ##t\n}")
 
-    gliss_off = ("glissOff", "\\revert NoteColumn.glissando-skip\n"
+    gliss_off = ("glissOff", "{\\revert NoteColumn.glissando-skip\n"
                              "    \\undo \\hide NoteHead\n"
-                             "    \\revert NoteHead.no-ledgers\n")
+                             "    \\undo \\omit Accidental\n"
+                             "    \\revert NoteHead.no-ledgers\n}")
 
     @classmethod
     def make_square(cls, pond_note):
@@ -38,9 +40,9 @@ class LilypondScripts:
     @classmethod
     def glissando(cls, pond_note, gliss_on=True):
         if gliss_on:
-            pond_note.post_marks.append("\\glissOn")
+            pond_note.post_marks.append("\\glissando\\glissOn ")
         else:
-            pond_note.pre_marks.append("\\glissOff")
+            pond_note.pre_marks.append("\\glissOff ")
 
     @classmethod
     def add_simple_glissando(cls, pond_note: PondNote, direction: int):

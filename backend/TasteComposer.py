@@ -12,7 +12,7 @@ class MainComposer:
     def __init__(self, file_path):
         with open(file_path, 'r') as file:
             self.data = json.load(file)
-        self.stage = 2
+        self.stage = 0
         self.__direction = 0
         self.command_volume = 0.0
         empty = ComposerEmpty()
@@ -25,6 +25,7 @@ class MainComposer:
         self.timer = Timer()
         self.timer.start()
         self.all_instruments = [PondMelody() for _ in range(3)]
+        self.current_time = 6
 
     def render_complete_score(self):
         score = PondScore.PondScore()
@@ -61,30 +62,51 @@ class MainComposer:
         return min(max(0., self.command_volume * multiplier), 1.)
 
     def compose(self):
+        stage = self.stage if self.stage < 6 else 0
         self.timer.new_time()
-        pitch_universe = self.get_composer_data(self.stage, "PITCH_UNIVERSE")
+        pitch_universe = self.get_composer_data(stage, "PITCH_UNIVERSE")
         score = PondScore.PondScore()
-        time_signature_initializers = self.get_composer_data(self.stage, "TIME_SIGNATURE")
+        time_signature_initializers = self.get_composer_data(stage, "TIME_SIGNATURE")
         time_signature = PondScore.PondTimeSignature(*time_signature_initializers)
-        voice_data = self.get_voice_data(self.stage)
-        lines = self.composers[self.stage].compose(pitch_universe,
-                                                   self.direction,
-                                                   self.get_volume(),
-                                                   voice_data)
+        voice_data = self.get_voice_data(stage)
+        lines = self.composers[stage].compose(pitch_universe,
+                                              self.direction,
+                                              self.get_volume(),
+                                              voice_data)
         shuffle(lines)
         for line in lines:
-            line_idx = lines.index(line)
-            line.time_string = time_signature.as_string()
-            self.all_instruments[line_idx].append_fragment(line)
             line.transpose(12)
+            target_duration = time_signature_initializers[0]
+            try:
+                assert line.real_duration == target_duration
+            except AssertionError:
+                error_string = (f"Duration: {line.real_duration}, "
+                                f"Target Duration: {target_duration}, "
+                                f"Stage/direction: "
+                                f"{self.stage}/{self.direction}, "
+                                f"Volume: {self.get_volume()}, "
+                                f"Voice_data:{voice_data}\n\n")
+                print(error_string)
+                with open("ERROR_LOG", "at") as file:
+                    file.write(error_string)
+
+            if self.current_time != target_duration:
+                melody = PondMelody(time_string=time_signature.as_string())
+                melody.append_fragment(line)
+            else:
+                melody = line
+            line_idx = lines.index(line)
+            self.all_instruments[line_idx].append_fragment(melody)
+
             staff = PondScore.PondStaff()
             staff.time_signature = time_signature
-
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
-        self.direction += choice([-1, -1, 0, 0,  1, 1, 1])
+
+        self.direction += choice([-1, 0, 0, 1, 1, 1])
         self.update_command_volume()
+        self.current_time = target_duration
         return score
 
     def get_voice_data(self, composer):
@@ -94,7 +116,7 @@ class MainComposer:
 
         all_silences = [[1, 2, 2], [1, 1, 2], [0, 1, 2],
                         [0, 1, 1], [0, 1, 1], [0, 0, 1], [0, 0, 1]]
-        min_index = max(self.stage, self.direction)
+        min_index = min(6, max(self.stage, self.direction))
         silence_possibles = all_silences[min_index:]
         silences = choice(silence_possibles)
         if shuffle_silence:
