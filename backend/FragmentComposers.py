@@ -25,10 +25,21 @@ class ComposerBase(ABC):
                    1 / 6: ('6', 16, False),
                    1 / 7: ('7', 16, False),
                    2 / 7: ('7', 8, True)}
+    dynamics_data = {0: Dynamics.pianissimo,
+                     1: Dynamics.piano,
+                     2: Dynamics.mezzo_piano,
+                     3: Dynamics.mezzo_forte,
+                     4: Dynamics.forte,
+                     5: Dynamics.fortissimo,
+                     6: Dynamics.custom_dynamic("f", 3)}
 
     def __init__(self, instruments=None):
         self.instruments = instruments or []
         self.dynamic = Dynamics.pianissimo
+
+    @abstractmethod
+    def set_dynamic(self, direction, volume):
+        pass
 
     @abstractmethod
     def compose(self, pitch_universe, direction, volume, voice_data):
@@ -215,8 +226,9 @@ class ComposerBase(ABC):
             return current - addition
 
     def compose_trill_fragment(self, pitch_universe, duration=4,
-                               volume=2., tuplet_type=4, extended=False, silence=0,
+                               volume=2., tuplet_type=4, extended=False,
                                start_pitch=None):
+        duration -= int(extended)
         if not start_pitch:
             multiplier = volume + ((1 - volume) / 2)
             size = len(pitch_universe) - 2
@@ -228,13 +240,13 @@ class ComposerBase(ABC):
             start_idx = pitch_universe.index(start_pitch)
             trill_idx = start_idx + 1
             trill_pitch = pitch_universe[trill_idx]
-        duration -= 0.5 * int(not extended)
         fragment = PondFragment()
         start_phrase = PondFragment()
-        if start_idx >= tuplet_type + 1:
+        if start_idx >= tuplet_type + 1 and duration > 2:
             notes_fragment = PondPhrase()
             start_phrase.append_fragment(PondNote.create_rest(16))
-            for idx in range(start_idx // 2, start_idx):
+            phrase_idx = min(5, start_idx // 2)
+            for idx in range(phrase_idx, start_idx):
                 note_duration = 8 if tuplet_type == 3 else 16
                 new_note = PondNote(pitch_universe[idx], duration=note_duration)
                 notes_fragment.append_fragment(new_note)
@@ -242,9 +254,9 @@ class ComposerBase(ABC):
             start_phrase.append_fragment(notes_fragment)
             start_phrase.ordered_notes()[0].dynamic = Dynamics.crescendo_hairpin
         fragment.append_fragment(start_phrase)
-        start_position = (silence + start_phrase.real_duration) % 1
+        start_position = start_phrase.real_duration % 1
         start_duration = 1 - start_position
-        remaining_duration = max(0.5, duration - (len(start_phrase) // tuplet_type))
+        remaining_duration = duration - start_phrase.real_duration
         note_durations = DurationInterface.get_duration_list(remaining_duration, True,
                                                              start_duration)
         main_note = PondNote(start_pitch,
@@ -263,8 +275,7 @@ class ComposerBase(ABC):
 
         if extended:
             extended_fragment = PondPhrase()
-            total_duration = fragment.real_duration + silence
-            remaining_duration = 1 - (total_duration % 1)
+            remaining_duration = 1 - (fragment.real_duration % 1)
             if remaining_duration == 0:
                 remaining_duration = 1
             note_amount = int(remaining_duration / 0.125)
@@ -287,11 +298,9 @@ class ComposerBase(ABC):
             last_note.dynamic = Dynamics.sforzando
             last_note.articulation = Articulations.staccato
         else:
-            new_note = PondNote(-1, duration=8)
-            new_note.trill_marks(False)
-            new_note.hide_note()
-            fragment.append_fragment(new_note)
-
+            rest = PondNote.create_rest(4)
+            rest.trill_marks(False)
+            fragment.append_fragment(rest)
         return fragment
 
     @classmethod
@@ -302,12 +311,11 @@ class ComposerBase(ABC):
         fragment = PondFragment()
         try:
             pond_duration = DurationInterface.get_pond_duration(note_duration)
-            notes_fragment = PondFragment()
             for _ in range(note_number):
                 new_note = PondNote(repeated_pitch, duration=pond_duration,
                                     articulation=Articulations.staccato)
-                if uniform(0, 1) < volume:
-                    LilypondScripts.add_simple_glissando(new_note, -2)
+                #if uniform(0, 1.2) < volume and note_duration > 0.5:
+                #    LilypondScripts.add_simple_glissando(new_note, -2)
                 fragment.append_fragment(new_note)
             fragment_duration = fragment.real_duration
             result = modf(fragment_duration)
@@ -440,6 +448,9 @@ class ComposerEmpty(ComposerBase):
         super().__init__(instruments)
         self.language = language
 
+    def set_dynamic(self, direction, volume):
+        self.dynamic = Dynamics.mezzo_forte
+
     def compose(self, *args, **kwargs):
         lines = []
         for _ in range(3):
@@ -461,26 +472,22 @@ class ComposerEmpty(ComposerBase):
         return fragment
 
 
-"""    @classmethod
-    def compose_instrument(cls, language):
-        instructions = cls.instructions[language]
-        smaller = PondMarkup.small
-        markup = PondMarkup(instructions, smaller, smaller)
-        markup_string = markup.add_to_note()
-        fragment = PondFragment()
-        rest = PondNote(-1, "1.")
-        rest.post_marks.append(markup_string)
-        rest.hide_note()
-        fragment.append_fragment(rest)
-        return fragment
-"""
-
-
 class ComposerA(ComposerBase):
     def __init__(self, instruments=None):
         super().__init__(instruments)
         self.dynamic = Dynamics.pianissimo
-        self.language = "english"
+
+    def set_dynamic(self, direction, volume):
+        dyn_dict = {0: 0,
+                    1: 0,
+                    2: 1,
+                    3: 2,
+                    4: 3,
+                    5: 4}
+        dynamic = dyn_dict[direction]
+        if volume > 0.6:
+            dynamic += 1
+        self.dynamic = self.dynamics_data[dynamic]
 
     @staticmethod
     def volume_calculator(volume):
@@ -555,8 +562,8 @@ class ComposerA(ComposerBase):
                 return self.compose_silence(6.)
         remaining_duration = 6 - silence
         duration = randint(min_duration, remaining_duration)
-
         if voice_type == 2:
+            duration = min(duration, 5 - silence)
             music_fragment = self.compose_trill_fragment(pitch_universe,
                                                          volume=volume,
                                                          duration=duration,
@@ -572,8 +579,9 @@ class ComposerA(ComposerBase):
         if silence:
             silence_fragment = self.compose_silence(silence)
             music_fragment.insert_fragment(0, silence_fragment)
+        assert music_fragment.real_duration <= 6, (f"{duration}, {silence}, "
+                                                   f"{volume}, {music_fragment.real_duration}")
 
-        assert isinstance(music_fragment, (PondFragment, PondPhrase)), f"{type(music_fragment)}"
         return self.complete_silence(music_fragment, True)
 
 
@@ -582,6 +590,18 @@ class ComposerB(ComposerBase):
     def __init__(self, instruments=None):
         super().__init__(instruments)
         self.dynamic = Dynamics.forte
+
+    def set_dynamic(self, direction, volume):
+        dyn_dict = {0: 4,
+                    1: 4,
+                    2: 2,
+                    3: 2,
+                    4: 3,
+                    5: 4}
+        dynamic = dyn_dict[direction]
+        if volume > 0.6:
+            dynamic += 1
+        self.dynamic = self.dynamics_data[dynamic]
 
     @staticmethod
     def volume_calculator(volume):
@@ -641,6 +661,18 @@ class ComposerC(ComposerBase):
         super().__init__(instruments)
         self.language = language
 
+    def set_dynamic(self, direction, volume):
+        dyn_dict = {0: 4,
+                    1: 4,
+                    2: 4,
+                    3: 4,
+                    4: 4,
+                    5: 5}
+        dynamic = dyn_dict[direction]
+        if volume > 0.5:
+            dynamic += 1
+        self.dynamic = self.dynamics_data[dynamic]
+
     def compose(self, pitch_universe, direction, volume, voice_data):
         lines = []
         silence = 0
@@ -676,6 +708,16 @@ class ComposerD(ComposerBase):
 
     def __init__(self, instruments=None):
         super().__init__(instruments)
+
+    def set_dynamic(self, direction, volume):
+        dyn_dict = {0: 1,
+                    1: 1,
+                    2: 1,
+                    3: 0,
+                    4: 0,
+                    5: 0}
+        dynamic = dyn_dict[direction]
+        self.dynamic = self.dynamics_data[dynamic]
 
     def compose(self, pitch_universe, direction, volume, voice_data):
         lines = []

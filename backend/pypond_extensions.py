@@ -7,12 +7,12 @@ class LilypondScripts:
                                  '#(markup #:musicglyph "noteheads.s2laWalker" )\n'
                                  '}')
     paper_settings = ("system-system-spacing =\n"
-                      "  #'((basic-distance . 25)\n"
-                      "  (minimum-distance . 18)\n"
+                      "  #'((basic-distance . 20)\n"
+                      "  (minimum-distance . 15)\n"
                       "  (padding . 2)\n"
                       "  (stretchability . 60))\n"
                       "markup-system-spacing =\n"
-                      "  #'((basic-distance . 40)\n"
+                      "  #'((basic-distance . 25)\n"
                       "  (minimum-distance . 18))\n")
     slash_head = ('headSlash', '{\\once \\override NoteHead.stencil = #ly:text-interface::print\n'
                                '\\once \\override NoteHead.text = '

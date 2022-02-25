@@ -58,7 +58,12 @@ class MainComposer:
         self.command_volume = volume
 
     def get_volume(self):
-        multiplier = (self.direction // 3) + 1
+        if self.direction < 2:
+            multiplier = 0.5
+        elif self.direction > 3:
+            multiplier = 2
+        else:
+            multiplier = 1
         return min(max(0., self.command_volume * multiplier), 1.)
 
     def compose(self):
@@ -69,14 +74,16 @@ class MainComposer:
         time_signature_initializers = self.get_composer_data(stage, "TIME_SIGNATURE")
         time_signature = PondScore.PondTimeSignature(*time_signature_initializers)
         voice_data = self.get_voice_data(stage)
-        lines = self.composers[stage].compose(pitch_universe,
-                                              self.direction,
-                                              self.get_volume(),
-                                              voice_data)
+        composer = self.composers[stage]
+        composer.set_dynamic(self.direction, self.get_volume())
+        lines = composer.compose(pitch_universe,
+                                 self.direction,
+                                 self.get_volume(),
+                                 voice_data)
         shuffle(lines)
+        target_duration = time_signature_initializers[0]
         for line in lines:
             line.transpose(12)
-            target_duration = time_signature_initializers[0]
             try:
                 assert line.real_duration == target_duration
             except AssertionError:
@@ -104,7 +111,7 @@ class MainComposer:
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
 
-        self.direction += choice([-1, 0, 0, 1, 1, 1])
+        self.direction += choice([-1, -1, 0, 0, 1, 1, 1])
         self.update_command_volume()
         self.current_time = target_duration
         return score
