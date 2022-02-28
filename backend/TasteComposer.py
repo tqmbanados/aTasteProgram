@@ -26,6 +26,7 @@ class MainComposer:
         self.timer.start()
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
+        self.__subsection = 1400
 
     def render_complete_score(self):
         score = PondScore.PondScore()
@@ -36,6 +37,18 @@ class MainComposer:
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
         return score
+
+    @property
+    def subsection(self):
+        return self.__subsection
+
+    @subsection.setter
+    def subsection(self, value):
+        if value <= self.direction or self.stage in (0, 4):
+            self.direction += 1
+            self.__subsection = 1400
+        else:
+            self.__subsection = value
 
     @property
     def direction(self):
@@ -111,7 +124,7 @@ class MainComposer:
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
 
-        self.direction += choice([-1, -1, 0, 0, 1, 1, 1])
+        self.subsection //= 2
         self.update_command_volume()
         self.current_time = target_duration
         return score
