@@ -26,13 +26,16 @@ class MainComposer:
         self.timer.start()
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
-        self.__subsection = 1400
+        self.__subsection = 500
 
     def render_complete_score(self):
         score = PondScore.PondScore()
         for line in self.all_instruments:
             staff = PondScore.PondStaff()
             staff.time_signature = PondScore.PondTimeSignature(6, 4)
+            staff.top_level_text.extend(["\\override Hairpin.minimum-length =  # 7",
+                                         "\\override Glissando.minimum-length =  # 5",
+                                         "\\tempo 4 = 80"])
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
@@ -46,7 +49,7 @@ class MainComposer:
     def subsection(self, value):
         if value <= self.direction or self.stage in (0, 4):
             self.direction += 1
-            self.__subsection = 1400
+            self.__subsection = 700
         else:
             self.__subsection = value
 
