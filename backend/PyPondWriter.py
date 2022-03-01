@@ -23,7 +23,7 @@ class PyPondWriter(QObject):
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
-        print("|", " " * 107, "|")
+        print("|", " " * 100, "|")
 
     @pyqtSlot(bool)
     def render_image(self, render):

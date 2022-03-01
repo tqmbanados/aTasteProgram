@@ -94,7 +94,7 @@ class Generator(QThread):
         self.signal_write = signal_write
 
     def run(self):
-        for _ in range(215):
+        for _ in range(200):
             sleep_time = uniform(0.05, 4)
             sleep(sleep_time)
             self.signal_next.emit(False)

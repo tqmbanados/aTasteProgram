@@ -26,7 +26,7 @@ class MainComposer:
         self.timer.start()
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
-        self.__subsection = 500
+        self.__subsection = 200
 
     def render_complete_score(self):
         score = PondScore.PondScore()
@@ -49,7 +49,7 @@ class MainComposer:
     def subsection(self, value):
         if value <= self.direction or self.stage in (0, 4):
             self.direction += 1
-            self.__subsection = 700
+            self.__subsection = 400
         else:
             self.__subsection = value
 
