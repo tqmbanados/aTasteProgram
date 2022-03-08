@@ -7,9 +7,9 @@ from functools import reduce
 
 
 class TasteBot(commands.Bot, QObject):
-    signal_command = pyqtSignal(str)
+    signal_command = pyqtSignal(dict)
 
-    def __init__(self, **kwargs):
+    def __init__(self, control_commands, **kwargs):
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
         # initial_channels can also be a callable which returns a list of strings...
@@ -18,6 +18,7 @@ class TasteBot(commands.Bot, QObject):
                          **kwargs)
         self.has_began = False
         self.timer = Timer()
+        self.control_commands = control_commands
 
     async def event_ready(self):
         # Notify us when everything is ready!
@@ -30,6 +31,8 @@ class TasteBot(commands.Bot, QObject):
         # For now we just want to ignore them...
         if message.echo:
             return
+        if message in self.control_commands:
+            await self.command_recieved(message.content)
 
         # Since we have commands and are overriding the default `event_message`
         # We must let the bot know we want to handle and invoke our commands...
@@ -42,15 +45,13 @@ class TasteBot(commands.Bot, QObject):
         self.has_began = True
         self.timer.start()
 
-    @commands.command()
-    async def control_commands(self, ctx: commands.Context):
+    async def command_recieved(self, command):
         self.timer.new_time()
-        command = ctx.message.content
         print(command)
         volume = self.timer.get_volume()
-        command_data = {'RENDER': False,
-                        'VOLUME': volume,
-                        'SET_VOLUME': True}
+        update_data = {'DIRECTION': 0,
+                       'VOLUME': volume}
+        self.signal_command.emit(update_data)
 
 
 class Timer:
@@ -80,5 +81,5 @@ class Timer:
 
 
 if __name__ == "__main__":
-    bot = TasteBot()
+    bot = TasteBot(["TEST"])
     bot.run()

@@ -1,12 +1,12 @@
-from PyQt5.QtWidgets import (QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
-                             QGridLayout)
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 from os import path
-from parameters import SCORE_IMAGE_PATH, window_geometry
-from frontend.QPondScores import ScoreLabel
-from time import sleep
 from random import uniform
+
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
+from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
+                             QGridLayout)
+
+from frontend.QPondScores import ScoreLabel
+from parameters import SCORE_IMAGE_PATH, window_geometry
 
 
 class PyPondWindow(QWidget):
@@ -75,8 +75,7 @@ class PyPondWindow(QWidget):
 
     @pyqtSlot()
     def get_next(self):
-        volume = uniform(0.05, 6)
-        self.update_label({'VOLUME': volume,
+        self.update_label({'VOLUME': uniform(0.05, 6),
                            'DIRECTION': 0})
         self.signal_get_next.emit(True)
 

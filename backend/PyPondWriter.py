@@ -10,39 +10,39 @@ from os import path
 class PyPondWriter(QObject):
     file_completed = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, measure_duration):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
         self.main_document = MainDoc()
         self.composer = MainComposer(path.join('backend', "data.json"))
-        self.init_doc()
+        self.init_doc(measure_duration)
         self.advance_bar = False
         self.timer = QTimer(parent=self)
 
-    def init_doc(self):
+    def init_doc(self, measure_duration):
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
         self.timer.timeout.connect(self.render_image)
-        self.timer.setInterval(5200)
+        self.timer.setInterval(measure_duration)
 
     @pyqtSlot(bool)
     def render_image(self, render=True):
         score = self.composer.compose()
-        if not render:
-            self.advance_bar = not self.advance_bar
-            return
-        self.pond_doc.score = score
-        self.render.update(self.pond_doc.create_file())
-        self.render.write()
-        self.render.render()
-        self.file_completed.emit()
+        if render:
+            self.pond_doc.score = score
+            self.render.update(self.pond_doc.create_file())
+            self.render.write()
+            self.render.render()
+            self.file_completed.emit()
 
     @pyqtSlot(dict)
     def update_values(self, values):
-        volume = values['volume']
+        volume = values['VOLUME']
         self.composer.volume = volume
+        direction = values['DIRECTION']
+        self.composer.direction += direction
 
     @pyqtSlot()
     def write_score(self):
