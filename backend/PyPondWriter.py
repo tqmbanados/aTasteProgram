@@ -18,20 +18,19 @@ class PyPondWriter(QObject):
         self.composer = MainComposer(path.join('backend', "data.json"))
         self.init_doc()
         self.advance_bar = False
+        self.timer = QTimer(parent=self)
 
     def init_doc(self):
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
-        self.timer()
-        print("|", " " * 100, "|")
+        self.timer.timeout.connect(self.render_image)
+        self.timer.setInterval(5200)
 
-    @pyqtSlot(dict)
-    def render_image(self, command_data):
-        score = self.composer.compose(command_data)
-        if not command_data['RENDER']:
-            if self.advance_bar:
-                print("|", end="")
+    @pyqtSlot(bool)
+    def render_image(self, render=True):
+        score = self.composer.compose()
+        if not render:
             self.advance_bar = not self.advance_bar
             return
         self.pond_doc.score = score
@@ -39,6 +38,11 @@ class PyPondWriter(QObject):
         self.render.write()
         self.render.render()
         self.file_completed.emit()
+
+    @pyqtSlot(dict)
+    def update_values(self, values):
+        volume = values['volume']
+        self.composer.volume = volume
 
     @pyqtSlot()
     def write_score(self):

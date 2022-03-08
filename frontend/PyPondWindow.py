@@ -12,12 +12,14 @@ from random import uniform
 class PyPondWindow(QWidget):
     signal_get_next = pyqtSignal(bool)
     signal_write_score = pyqtSignal()
+    signal_update_value = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
         self.setGeometry(*window_geometry)
         self.music_labels = {}
         self.next = QPushButton("Next", self)
+        self.advance = QPushButton("Advance", self)
         self.end = QPushButton("End", self)
         self.auto = QPushButton("Auto-generate", self)
         self.init_gui()
@@ -46,9 +48,10 @@ class PyPondWindow(QWidget):
             self.music_labels[idx] = new_music_label
             score_layout.addWidget(new_music_label, x, y)
 
-        h_box_button = QHBoxLayout()
+        h_box_button = QVBoxLayout()
         h_box_button.addStretch()
         h_box_button.addWidget(self.next)
+        h_box_button.addWidget(self.advance)
         h_box_button.addWidget(self.end)
         h_box_button.addWidget(self.auto)
         h_box_button.addStretch()
@@ -62,9 +65,19 @@ class PyPondWindow(QWidget):
         self.next.clicked.connect(self.get_next)
         self.end.clicked.connect(self.write_score)
         self.auto.clicked.connect(self.automatic_score)
+        self.advance.clicked.connect(self.next_direction)
+
+    @pyqtSlot()
+    def next_direction(self):
+        data = {'VOLUME': 0,
+                'DIRECTION': 1}
+        self.signal_update_value.emit(data)
 
     @pyqtSlot()
     def get_next(self):
+        volume = uniform(0.05, 6)
+        self.update_label({'VOLUME': volume,
+                           'DIRECTION': 0})
         self.signal_get_next.emit(True)
 
     @pyqtSlot()
@@ -83,19 +96,28 @@ class PyPondWindow(QWidget):
         self.signal_write_score.emit()
 
     def automatic_score(self):
-        new_thread = Generator(self.signal_get_next, self.signal_write_score, self)
+        new_thread = Generator(self.signal_get_next, self.signal_write_score,
+                               self.signal_update_value, self)
         new_thread.start()
 
 
 class Generator(QThread):
-    def __init__(self, signal_next, signal_write, *args, **kwargs):
+    def __init__(self, signal_next, signal_write,
+                 signal_update, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.signal_next = signal_next
         self.signal_write = signal_write
+        self.signal_update = signal_update
 
     def run(self):
-        for _ in range(200):
-            sleep_time = uniform(0.05, 4)
-            sleep(sleep_time)
+        volume_list = [uniform(0.05, 5) for _ in range(200)]
+        increase_direction = -1
+        for volume in volume_list:
+            direction = not increase_direction
+            increase_direction += 1
+            if increase_direction > 4:
+                increase_direction = 0
+            self.signal_update.emit({'VOLUME': volume,
+                                     'DIRECTION': direction})
             self.signal_next.emit(False)
-        self.signal_write.emit()
+        self.signal_write_score.emit()

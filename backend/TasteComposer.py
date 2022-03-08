@@ -14,7 +14,7 @@ class MainComposer:
             self.data = json.load(file)
         self.stage = 0
         self.__direction = 0
-        self.command_volume = 0.0
+        self.__volume = 0.0
         empty = ComposerEmpty()
         self.composers = {0: empty,
                           1: ComposerA(),
@@ -24,7 +24,6 @@ class MainComposer:
                           5: ComposerD()}
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
-        self.__subsection = 200
 
     def render_complete_score(self):
         score = PondScore.PondScore()
@@ -40,18 +39,6 @@ class MainComposer:
         return score
 
     @property
-    def subsection(self):
-        return self.__subsection
-
-    @subsection.setter
-    def subsection(self, value):
-        if value <= self.direction or self.stage in (0, 4):
-            self.direction += 1
-            self.__subsection = 400
-        else:
-            self.__subsection = value
-
-    @property
     def direction(self):
         return abs(int(self.__direction))
 
@@ -63,31 +50,34 @@ class MainComposer:
         else:
             self.__direction = value
 
-    def update_command_volume(self, value):
-        self.command_volume = value
-
-    def get_volume(self):
+    @property
+    def volume(self):
         if self.direction < 2:
             multiplier = 0.5
         elif self.direction > 3:
             multiplier = 2
         else:
             multiplier = 1
-        return min(max(0., self.command_volume * multiplier), 1.)
+        return min(max(0., self.__volume * multiplier), 1.)
 
-    def compose(self, command_data):
+    @volume.setter
+    def volume(self, value):
+        self.__volume = value
+
+    def compose(self):
         stage = self.stage if self.stage < 6 else 0
-        self.timer.new_time()
         pitch_universe = self.get_composer_data(stage, "PITCH_UNIVERSE")
+
         score = PondScore.PondScore()
         time_signature_initializers = self.get_composer_data(stage, "TIME_SIGNATURE")
         time_signature = PondScore.PondTimeSignature(*time_signature_initializers)
         voice_data = self.get_voice_data(stage)
         composer = self.composers[stage]
-        composer.set_dynamic(self.direction, self.get_volume())
+        composer.set_dynamic(self.direction, self.volume)
+
         lines = composer.compose(pitch_universe,
                                  self.direction,
-                                 self.get_volume(),
+                                 self.volume,
                                  voice_data)
         shuffle(lines)
         target_duration = time_signature_initializers[0]
@@ -100,7 +90,7 @@ class MainComposer:
                                 f"Target Duration: {target_duration}, "
                                 f"Stage/direction: "
                                 f"{self.stage}/{self.direction}, "
-                                f"Volume: {self.get_volume()}, "
+                                f"Volume: {self.volume}, "
                                 f"Voice_data:{voice_data}\n\n")
                 print(error_string)
                 with open("ERROR_LOG", "at") as file:
@@ -120,8 +110,6 @@ class MainComposer:
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
 
-        self.subsection //= 2
-        self.update_command_volume()
         self.current_time = target_duration
         return score
 
@@ -143,6 +131,3 @@ class MainComposer:
         if data_needed == 'all':
             return self.data['COMPOSER_DATA'][str(composer)]
         return self.data['COMPOSER_DATA'][str(composer)][data_needed]
-
-
-
