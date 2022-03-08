@@ -1,7 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QTimer
 from pypond.PondFile import PondDoc, PondRender
 from pypond.PondCommand import PondHeader, PondPaper
-from pypond import PondScore
 from backend.pypond_extensions import LilypondScripts
 from backend.TasteComposer import MainComposer
 from os import path
@@ -16,9 +15,9 @@ class PyPondWriter(QObject):
         self.pond_doc = PondDoc()
         self.main_document = MainDoc()
         self.composer = MainComposer(path.join('backend', "data.json"))
-        self.init_doc(measure_duration)
         self.advance_bar = False
         self.timer = QTimer(parent=self)
+        self.init_doc(measure_duration)
 
     def init_doc(self, measure_duration):
         self.pond_doc.header = PondHeader()
@@ -27,7 +26,10 @@ class PyPondWriter(QObject):
         self.timer.timeout.connect(self.render_image)
         self.timer.setInterval(measure_duration)
 
-    @pyqtSlot(bool)
+    @pyqtSlot()
+    def begin(self):
+        self.timer.start()
+
     def render_image(self, render=True):
         score = self.composer.compose()
         if render:

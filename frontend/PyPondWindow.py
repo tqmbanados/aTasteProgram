@@ -75,8 +75,8 @@ class PyPondWindow(QWidget):
 
     @pyqtSlot()
     def get_next(self):
-        self.update_label({'VOLUME': uniform(0.05, 6),
-                           'DIRECTION': 0})
+        self.signal_update_value.emit({'VOLUME': uniform(0.05, 6),
+                                       'DIRECTION': 0})
         self.signal_get_next.emit(True)
 
     @pyqtSlot()
@@ -119,4 +119,4 @@ class Generator(QThread):
             self.signal_update.emit({'VOLUME': volume,
                                      'DIRECTION': direction})
             self.signal_next.emit(False)
-        self.signal_write_score.emit()
+        self.signal_write.emit()

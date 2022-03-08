@@ -1,24 +1,28 @@
-from twitchio.ext import commands
-import os
-from PyQt5.QtCore import QObject, pyqtSignal
-import token_data
-from time import time
 from functools import reduce
+from time import time
+
+from PyQt5.QtCore import pyqtSignal, QThread
+from twitchio.ext import commands
+
+import token_data
 
 
-class TasteBot(commands.Bot, QObject):
-    signal_command = pyqtSignal(dict)
+class TasteBot(commands.Bot):
 
-    def __init__(self, control_commands, **kwargs):
+    def __init__(self, control_commands, signal_command, signal_start,
+                 **kwargs):
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
         # initial_channels can also be a callable which returns a list of strings...
-        super().__init__(token=token_data.ACCESS_TOKEN, prefix='.',
+        super().__init__(token=token_data.ACCESS_TOKEN, prefix='!',
                          nick='FrenBot', initial_channels=['Thyme_bb'],
                          **kwargs)
         self.has_began = False
         self.timer = Timer()
         self.control_commands = control_commands
+        self.has_ended = False
+        self.signal_command = signal_command
+        self.signal_start = signal_start
 
     async def event_ready(self):
         # Notify us when everything is ready!
@@ -31,8 +35,9 @@ class TasteBot(commands.Bot, QObject):
         # For now we just want to ignore them...
         if message.echo:
             return
-        if message in self.control_commands:
+        if message.content in self.control_commands:
             await self.command_recieved(message.content)
+            return
 
         # Since we have commands and are overriding the default `event_message`
         # We must let the bot know we want to handle and invoke our commands...
@@ -42,8 +47,16 @@ class TasteBot(commands.Bot, QObject):
     async def begin(self, ctx: commands.Context):
         if self.has_began:
             return
+        print("Bot has began recieving commands")
+        self.signal_start.emit()
         self.has_began = True
         self.timer.start()
+
+    @commands.command()
+    async def end(self, ctx: commands.Context):
+        if self.has_began:
+            self.has_ended = True
+            self.has_began = False
 
     async def command_recieved(self, command):
         self.timer.new_time()
@@ -80,6 +93,22 @@ class Timer:
         return reduce(lambda x, y: x / y, diffs, 0.8)
 
 
+class Messenger(QThread):
+    signal_command = pyqtSignal(dict)
+    signal_start = pyqtSignal()
+
+    def __init__(self, control_commands):
+        super().__init__()
+        self.bot = TasteBot(control_commands, self.signal_command, self.signal_start)
+
+    def run(self):
+        self.bot.run()
+        while not self.bot.has_ended:
+            continue
+        self.bot.end()
+
+
 if __name__ == "__main__":
-    bot = TasteBot(["TEST"])
+    messenger = Messenger(["TEST"])
+    bot = TasteBot(["TEST"], messenger.signal_command, messenger.signal_start)
     bot.run()
