@@ -18,6 +18,7 @@ class PyPondWriter(QObject):
         self.advance_bar = False
         self.timer = QTimer(parent=self)
         self.init_doc(measure_duration)
+        self.measure_number = 0
 
     def init_doc(self, measure_duration):
         self.pond_doc.header = PondHeader()
@@ -33,6 +34,10 @@ class PyPondWriter(QObject):
     def render_image(self, render=True):
         score = self.composer.compose()
         if render:
+            print(f"Rendering measure {self.measure_number}\n"
+                  f"    Volume: {self.composer.volume}\n"
+                  f"    Stage: {self.composer.stage}-{self.composer.direction}")
+            self.measure_number += 1
             self.pond_doc.score = score
             self.render.update(self.pond_doc.create_file())
             self.render.write()
