@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal, QTimer
 from pypond.PondFile import PondDoc, PondRender
 from pypond.PondCommand import PondHeader, PondPaper
 from pypond import PondScore
@@ -23,12 +23,13 @@ class PyPondWriter(QObject):
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
+        self.timer()
         print("|", " " * 100, "|")
 
-    @pyqtSlot(bool)
-    def render_image(self, render):
-        score = self.composer.compose()
-        if not render:
+    @pyqtSlot(dict)
+    def render_image(self, command_data):
+        score = self.composer.compose(command_data)
+        if not command_data['RENDER']:
             if self.advance_bar:
                 print("|", end="")
             self.advance_bar = not self.advance_bar

@@ -30,3 +30,8 @@ ly_files
 */pypond/*
 pypond
 ERROR_LOG
+
+*/TOKENS
+TOKENS
+twitch_bot/token_data.py
+tokens.txt

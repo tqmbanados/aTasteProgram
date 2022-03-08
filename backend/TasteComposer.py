@@ -22,8 +22,6 @@ class MainComposer:
                           3: ComposerC(),
                           4: empty,
                           5: ComposerD()}
-        self.timer = Timer()
-        self.timer.start()
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
         self.__subsection = 200
@@ -65,13 +63,8 @@ class MainComposer:
         else:
             self.__direction = value
 
-    def update_command_volume(self):
-        diffs = self.timer.last_values()
-        if len(diffs) < 2:
-            self.command_volume = 0.0
-            return
-        volume = reduce(lambda x, y: x / y, diffs, 0.8)
-        self.command_volume = volume
+    def update_command_volume(self, value):
+        self.command_volume = value
 
     def get_volume(self):
         if self.direction < 2:
@@ -82,7 +75,7 @@ class MainComposer:
             multiplier = 1
         return min(max(0., self.command_volume * multiplier), 1.)
 
-    def compose(self):
+    def compose(self, command_data):
         stage = self.stage if self.stage < 6 else 0
         self.timer.new_time()
         pitch_universe = self.get_composer_data(stage, "PITCH_UNIVERSE")
@@ -152,21 +145,4 @@ class MainComposer:
         return self.data['COMPOSER_DATA'][str(composer)][data_needed]
 
 
-class Timer:
-    def __init__(self):
-        self.last_time = 0
-        self.time_list = []
-        self.diff_list = []
 
-    def start(self):
-        self.last_time = time()
-        self.time_list.append(self.last_time)
-
-    def new_time(self):
-        new = time()
-        self.time_list.append(new)
-        self.diff_list.append(new - self.last_time)
-        self.last_time = new
-
-    def last_values(self, idx=4):
-        return self.diff_list[-idx:]
