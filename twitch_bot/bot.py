@@ -4,18 +4,18 @@ from time import time
 from PyQt5.QtCore import pyqtSignal, QThread
 from twitchio.ext import commands
 
-import token_data
+import twitch_bot.token_data as token_data
 
 
-class TasteBot(commands.Bot):
+class ControlBot(commands.Bot):
 
     def __init__(self, control_commands, signal_command, signal_start,
                  **kwargs):
         # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
         # prefix can be a callable, which returns a list of strings or a string...
         # initial_channels can also be a callable which returns a list of strings...
-        super().__init__(token=token_data.ACCESS_TOKEN, prefix='!',
-                         nick='FrenBot', initial_channels=['Thyme_bb'],
+        super().__init__(token=token_data.OAUTH_TOKEN, client_id=token_data.CLIENT_ID,
+                         prefix='!', nick='aTasteOfControl', initial_channels=['Thyme_bb'],
                          **kwargs)
         self.has_began = False
         self.timer = Timer()
@@ -41,7 +41,8 @@ class TasteBot(commands.Bot):
 
         # Since we have commands and are overriding the default `event_message`
         # We must let the bot know we want to handle and invoke our commands...
-        await self.handle_commands(message)
+        if message.author.name.lower() == token_data.ADMIN:
+            await self.handle_commands(message)
 
     @commands.command()
     async def begin(self, ctx: commands.Context):
@@ -99,7 +100,7 @@ class Messenger(QThread):
 
     def __init__(self, control_commands):
         super().__init__()
-        self.bot = TasteBot(control_commands, self.signal_command, self.signal_start)
+        self.bot = ControlBot(control_commands, self.signal_command, self.signal_start)
 
     def run(self):
         self.bot.run()
@@ -110,5 +111,5 @@ class Messenger(QThread):
 
 if __name__ == "__main__":
     messenger = Messenger(["TEST"])
-    bot = TasteBot(["TEST"], messenger.signal_command, messenger.signal_start)
+    bot = ControlBot(["TEST"], messenger.signal_command, messenger.signal_start)
     bot.run()
