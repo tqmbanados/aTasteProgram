@@ -5,8 +5,9 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QGridLayout)
 
-from frontend.QPondScores import ScoreLabel
+from front_end.QPondScores import ScoreLabel
 from parameters import SCORE_IMAGE_PATH, window_geometry
+from time import sleep
 
 
 class PyPondWindow(QWidget):
@@ -22,13 +23,15 @@ class PyPondWindow(QWidget):
         self.advance = QPushButton("Advance", self)
         self.end = QPushButton("End", self)
         self.auto = QPushButton("Auto-generate", self)
+        self.grid_based = True
         self.init_gui()
         self.__next = 0
 
     def next_label(self):
+        max_idx = 3 if self.grid_based else 1
         current = self.__next
         self.__next += 1
-        if self.__next > 3:
+        if self.__next > max_idx:
             self.__next = 0
         return current
 
@@ -39,14 +42,23 @@ class PyPondWindow(QWidget):
         return to_delete
 
     def init_gui(self):
-        score_layout = QGridLayout()
+        # Code for Grid based score_layout
+        """score_layout = QGridLayout()
         for idx, x, y in [(0, 0, 0), (1, 0, 1), (2, 1, 0), (3, 1, 1)]:
             new_music_label = ScoreLabel(idx, parent=self)
             size_policy = QSizePolicy()
             size_policy.setRetainSizeWhenHidden(True)
             new_music_label.setSizePolicy(size_policy)
             self.music_labels[idx] = new_music_label
-            score_layout.addWidget(new_music_label, x, y)
+            score_layout.addWidget(new_music_label, x, y)"""
+        # Code for Vertical based score_layout
+        score_layout = QVBoxLayout()
+        self.grid_based = False
+        for idx in range(2):
+            new_music_label = ScoreLabel(idx, parent=self)
+            self.music_labels[idx] = new_music_label
+            score_layout.addWidget(new_music_label, 2)
+            score_layout.addStretch(1)
 
         h_box_button = QVBoxLayout()
         h_box_button.addStretch()
@@ -81,11 +93,12 @@ class PyPondWindow(QWidget):
 
     @pyqtSlot()
     def update_label(self):
-        idx_hide = self.hide_label_idx()
-        idx_update = self.next_label()
-        label_hide = self.music_labels[idx_hide]
-        label_hide.hide()
+        if self.grid_based:
+            idx_hide = self.hide_label_idx()
+            label_hide = self.music_labels[idx_hide]
+            label_hide.hide()
 
+        idx_update = self.next_label()
         label_update = self.music_labels[idx_update]
         image_path = path.join(*SCORE_IMAGE_PATH)
         label_update.update_label(image_path)
@@ -119,4 +132,6 @@ class Generator(QThread):
             self.signal_update.emit({'VOLUME': volume,
                                      'DIRECTION': direction})
             self.signal_next.emit(False)
+            sleep(4)
+
         self.signal_write.emit()

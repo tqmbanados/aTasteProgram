@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QApplication
 
 from backend.PyPondWriter import PyPondWriter
-from frontend.PyPondWindow import PyPondWindow
+from front_end.PyPondWindow import PyPondWindow
 from twitch_bot.bot import Messenger
 import sys
 import parameters as p

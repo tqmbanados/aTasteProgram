@@ -38,6 +38,7 @@ class ControlBot(commands.Bot):
         if message.content in self.control_commands:
             await self.command_recieved(message.content)
             return
+        print(message)
 
         # Since we have commands and are overriding the default `event_message`
         # We must let the bot know we want to handle and invoke our commands...
