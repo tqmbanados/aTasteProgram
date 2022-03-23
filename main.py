@@ -7,13 +7,13 @@ import sys
 import parameters as p
 
 if __name__ == "__main__":
-    def hook(type, value, traceback):
-        print(value, type)
+    def hook(type_, value, traceback):
+        print(value, type_)
         print(traceback)
     sys.__excepthook__ = hook
 
     app = QApplication([])
-    window = PyPondWindow()
+    window = PyPondWindow(p.beat_duration_ms)
     render = PyPondWriter(p.measure_duration_ms)
     bot_messenger = Messenger(p.commands)
 

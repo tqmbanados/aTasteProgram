@@ -3,9 +3,9 @@ from random import uniform
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
-                             QGridLayout)
+                             QGridLayout, QLabel)
 
-from front_end.QPondScores import ScoreLabel
+from front_end.QPondWidgets import ScoreLabel, Metronome
 from parameters import SCORE_IMAGE_PATH, window_geometry
 from time import sleep
 
@@ -15,7 +15,7 @@ class PyPondWindow(QWidget):
     signal_write_score = pyqtSignal()
     signal_update_value = pyqtSignal(dict)
 
-    def __init__(self):
+    def __init__(self, beat_duration):
         super().__init__()
         self.setGeometry(*window_geometry)
         self.music_labels = {}
@@ -23,6 +23,7 @@ class PyPondWindow(QWidget):
         self.advance = QPushButton("Advance", self)
         self.end = QPushButton("End", self)
         self.auto = QPushButton("Auto-generate", self)
+        self.metronome = Metronome(beat_duration, parent=self)
         self.grid_based = True
         self.init_gui()
         self.__next = 0
@@ -62,6 +63,8 @@ class PyPondWindow(QWidget):
 
         h_box_button = QVBoxLayout()
         h_box_button.addStretch()
+        h_box_button.addWidget(self.metronome)
+        h_box_button.addStretch()
         h_box_button.addWidget(self.next)
         h_box_button.addWidget(self.advance)
         h_box_button.addWidget(self.end)
@@ -78,6 +81,7 @@ class PyPondWindow(QWidget):
         self.end.clicked.connect(self.write_score)
         self.auto.clicked.connect(self.automatic_score)
         self.advance.clicked.connect(self.next_direction)
+        self.metronome.init_gui()
 
     @pyqtSlot()
     def next_direction(self):
