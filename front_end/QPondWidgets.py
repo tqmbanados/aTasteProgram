@@ -73,7 +73,7 @@ class Metronome(QLabel):
             self.countdown.setText(str(remaining))
         else:
             self.countdown.setText(" ")
-            self.beeper.beep()
+        self.beeper.beep()
 
 
 class Beeper(QLabel):
@@ -114,6 +114,6 @@ class BeeperThread(QThread):
 
     def run(self):
         while True:
-            self.beeper.alpha -= 10
+            self.beeper.alpha -= 20
             sleep(0.04)
 
