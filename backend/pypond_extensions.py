@@ -66,8 +66,8 @@ class LilypondScripts:
 
 
 class PondInstrument:
-    def __init__(self, lower_range, higher_range, transposition=0,
-                 increased_range=0):
+    def __init__(self, lower_range, higher_range,
+                 increased_range=0, transposition=0):
         self.range = [lower_range, higher_range,
                       higher_range + increased_range]
         self.transposition = transposition
@@ -81,12 +81,13 @@ class PondInstrument:
             return True, "increased"
         return True, "normal"
 
-    def fit_melody(self, melody):
-        fits, cause = self.validate_melody(melody)
-        if fits:
-            return melody
-        if cause == "lower":
-            pass
+    def limit_pitch_universe(self, pitch_universe: list):
+        allowed_pitches = range(self.range[0], self.range[2] + 1)
+        universe = pitch_universe.copy()
+        for pitch in allowed_pitches:
+            universe.remove(pitch)
+        return universe
 
     def transpose(self, melody):
         melody.transpose(self.transposition)
+

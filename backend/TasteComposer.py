@@ -1,11 +1,10 @@
 from pypond.PondMusic import PondMelody
 import json
-from functools import reduce
 from random import choice, shuffle
-from time import time
 
-from backend.FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
+from .FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
 from pypond import PondScore
+from .pypond_extensions import PondInstrument
 
 
 class MainComposer:
@@ -16,12 +15,15 @@ class MainComposer:
         self.__direction = 0
         self.__volume = 0.0
         empty = ComposerEmpty()
+        self.instruments = {'flute': PondInstrument(0, 29, 5),
+                            'oboe': PondInstrument(-1, 24, 3),
+                            'clarinet': PondInstrument(-8, 24, 3, -2)}
         self.composers = {0: empty,
-                          1: ComposerA(),
-                          2: ComposerB(),
-                          3: ComposerC(),
+                          1: ComposerA(instruments=self.instruments),
+                          2: ComposerB(instruments=self.instruments),
+                          3: ComposerC(instruments=self.instruments),
                           4: empty,
-                          5: ComposerD()}
+                          5: ComposerD(instruments=self.instruments)}
         self.all_instruments = [PondMelody() for _ in range(3)]
         self.current_time = 6
 
@@ -79,7 +81,6 @@ class MainComposer:
                                  self.direction,
                                  self.volume,
                                  voice_data)
-        shuffle(lines)
         target_duration = time_signature_initializers[0]
         for line in lines:
             line.transpose(12)
@@ -111,12 +112,13 @@ class MainComposer:
             score.add_staff(staff)
 
         self.current_time = target_duration
-        return score
+        return score, lines
 
     def get_voice_data(self, composer):
         types = self.get_composer_data(composer, 'VOICE_TYPES')[str(self.direction)]
         shuffle_silence = self.get_composer_data(composer, 'SHUFFLE_SILENCE')
         voices = choice(types)
+        shuffle(voices)
 
         all_silences = [[1, 2, 2], [1, 1, 2], [0, 1, 2],
                         [0, 1, 1], [0, 1, 1], [0, 0, 1], [0, 0, 1]]
