@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QLabel, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt5.QtGui import QPixmap, QColor, QPainter, QFont
-from PyQt5.QtCore import QTimer, QThread
+from PyQt5.QtCore import QTimer, QThread, pyqtSlot
 from time import sleep
 
 
@@ -74,6 +74,10 @@ class Metronome(QLabel):
         else:
             self.countdown.setText(" ")
         self.beeper.beep()
+
+    def new_measure(self, time):
+        self.beat_duration = time
+        self.__current_beat = 0
 
 
 class Beeper(QLabel):

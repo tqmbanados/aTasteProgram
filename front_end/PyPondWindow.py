@@ -95,8 +95,8 @@ class PyPondWindow(QWidget):
                                        'DIRECTION': 0})
         self.signal_get_next.emit(True)
 
-    @pyqtSlot()
-    def update_label(self):
+    @pyqtSlot(int)
+    def update_label(self, measure_time):
         if self.grid_based:
             idx_hide = self.hide_label_idx()
             label_hide = self.music_labels[idx_hide]
@@ -106,6 +106,7 @@ class PyPondWindow(QWidget):
         label_update = self.music_labels[idx_update]
         image_path = path.join(*SCORE_IMAGE_PATH)
         label_update.update_label(image_path)
+        self.metronome.new_measure(measure_time)
         label_update.show()
 
     def write_score(self):

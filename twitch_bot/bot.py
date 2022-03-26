@@ -9,13 +9,10 @@ import twitch_bot.token_data as token_data
 
 class ControlBot(commands.Bot):
 
-    def __init__(self, control_commands, signal_command, signal_start,
+    def __init__(self, control_commands, signal_command, signal_start, channel_name,
                  **kwargs):
-        # Initialise our Bot with our access token, prefix and a list of channels to join on boot...
-        # prefix can be a callable, which returns a list of strings or a string...
-        # initial_channels can also be a callable which returns a list of strings...
         super().__init__(token=token_data.OAUTH_TOKEN, client_id=token_data.CLIENT_ID,
-                         prefix='!', nick='aTasteOfControl', initial_channels=['Thyme_bb'],
+                         prefix='!', nick='aTasteOfControl', initial_channels=[channel_name],
                          **kwargs)
         self.has_began = False
         self.timer = Timer()
@@ -25,14 +22,10 @@ class ControlBot(commands.Bot):
         self.signal_start = signal_start
 
     async def event_ready(self):
-        # Notify us when everything is ready!
-        # We are logged in and ready to chat and use commands...
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
 
     async def event_message(self, message):
-        # Messages with echo set to True are messages sent by the bot...
-        # For now we just want to ignore them...
         if message.echo:
             return
         if message.content in self.control_commands:
@@ -40,8 +33,6 @@ class ControlBot(commands.Bot):
             return
         print(message)
 
-        # Since we have commands and are overriding the default `event_message`
-        # We must let the bot know we want to handle and invoke our commands...
         if message.author.name.lower() == token_data.ADMIN:
             await self.handle_commands(message)
 
@@ -99,9 +90,10 @@ class Messenger(QThread):
     signal_command = pyqtSignal(dict)
     signal_start = pyqtSignal()
 
-    def __init__(self, control_commands):
+    def __init__(self, control_commands, channel_name):
         super().__init__()
-        self.bot = ControlBot(control_commands, self.signal_command, self.signal_start)
+        self.bot = ControlBot(control_commands, self.signal_command,
+                              self.signal_start, channel_name)
 
     def run(self):
         self.bot.run()

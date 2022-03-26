@@ -7,9 +7,9 @@ from os import path
 
 
 class PyPondWriter(QObject):
-    file_completed = pyqtSignal()
+    file_completed = pyqtSignal(int)
 
-    def __init__(self, measure_duration):
+    def __init__(self, beat_duration):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
@@ -17,23 +17,30 @@ class PyPondWriter(QObject):
         self.composer = MainComposer(path.join('backend', "data.json"))
         self.advance_bar = False
         self.timer = QTimer(parent=self)
-        self.init_doc(measure_duration)
         self.measure_number = 0
+        self.beat_duration = beat_duration
 
-    def init_doc(self, measure_duration):
+        self.init_doc()
+
+    def init_doc(self):
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
         self.timer.timeout.connect(self.render_image)
-        self.timer.setInterval(measure_duration)
+        self.timer.setInterval(self.measure_duration(6))
 
     @pyqtSlot()
     def begin(self):
         self.timer.start()
 
+    def measure_duration(self, beat_number):
+        return self.beat_duration * beat_number
+
     def render_image(self, render=True):
         score = self.composer.compose()
         if render:
+            time = self.composer.current_time
+            self.timer.setInterval(self.measure_duration(time))
             print(f"Rendering measure {self.measure_number}\n"
                   f"    Volume: {self.composer.volume}\n"
                   f"    Stage: {self.composer.stage}-{self.composer.direction}")
@@ -42,7 +49,7 @@ class PyPondWriter(QObject):
             self.render.update(self.pond_doc.create_file())
             self.render.write()
             self.render.render()
-            self.file_completed.emit()
+            self.file_completed.emit(time)
 
     @pyqtSlot(dict)
     def update_values(self, values):

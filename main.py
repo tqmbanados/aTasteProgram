@@ -5,6 +5,7 @@ from front_end.PyPondWindow import PyPondWindow
 from twitch_bot.bot import Messenger
 import sys
 import parameters as p
+from private_parameters import channel_name
 
 if __name__ == "__main__":
     def hook(type_, value, traceback):
@@ -14,8 +15,8 @@ if __name__ == "__main__":
 
     app = QApplication([])
     window = PyPondWindow(p.beat_duration_ms)
-    render = PyPondWriter(p.measure_duration_ms)
-    bot_messenger = Messenger(p.commands)
+    render = PyPondWriter(p.beat_duration_ms)
+    bot_messenger = Messenger(p.commands, channel_name)
 
     window.signal_get_next.connect(render.render_image)
     window.signal_write_score.connect(render.write_score)

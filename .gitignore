@@ -35,3 +35,4 @@ ERROR_LOG
 TOKENS
 twitch_bot/token_data.py
 tokens.txt
+private_parameters.py
