@@ -29,6 +29,10 @@ class LilypondScripts:
                              "    \\undo \\omit Accidental\n"
                              "    \\revert NoteHead.no-ledgers\n}")
 
+    staff_marks = ["\\override Hairpin.minimum-length =  # 7",
+                   "\\override Glissando.minimum-length =  # 5",
+                   "\\tempo 4 = 80"]
+
     @classmethod
     def make_square(cls, pond_note):
         pond_note.pre_marks.append("\\headSquare ")
@@ -90,4 +94,3 @@ class PondInstrument:
 
     def transpose(self, melody):
         melody.transpose(self.transposition)
-

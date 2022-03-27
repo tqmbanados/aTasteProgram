@@ -4,7 +4,7 @@ from random import choice, shuffle
 
 from .FragmentComposers import ComposerEmpty, ComposerA, ComposerB, ComposerC, ComposerD
 from pypond import PondScore
-from .pypond_extensions import PondInstrument
+from .pypond_extensions import PondInstrument, LilypondScripts
 
 
 class MainComposer:
@@ -32,9 +32,7 @@ class MainComposer:
         for line in self.all_instruments:
             staff = PondScore.PondStaff()
             staff.time_signature = PondScore.PondTimeSignature(6, 4)
-            staff.top_level_text.extend(["\\override Hairpin.minimum-length =  # 7",
-                                         "\\override Glissando.minimum-length =  # 5",
-                                         "\\tempo 4 = 80"])
+            staff.top_level_text.extend(LilypondScripts.staff_marks)
             staff.add_voice(line)
             staff.add_with_command("omit", "TimeSignature")
             score.add_staff(staff)
