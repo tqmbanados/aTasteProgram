@@ -75,13 +75,15 @@ class MainComposer:
         composer = self.composers[stage]
         composer.set_dynamic(self.direction, self.volume)
 
-        lines = composer.compose(pitch_universe,
-                                 self.direction,
-                                 self.volume,
-                                 voice_data)
+        lines_by_instrument = composer.compose(pitch_universe,
+                                               self.direction,
+                                               self.volume,
+                                               voice_data)
         target_duration = time_signature_initializers[0]
 
-        lines = [lines['flute'], lines['oboe'], lines['clarinet']]
+        lines = [lines_by_instrument['flute'],
+                 lines_by_instrument['oboe'],
+                 lines_by_instrument['clarinet']]
 
         for line in lines:
             line.transpose(12)
@@ -113,7 +115,7 @@ class MainComposer:
             score.add_staff(staff)
 
         self.current_time = target_duration
-        return score, lines
+        return score, lines_by_instrument
 
     def get_voice_data(self, composer):
         types = self.get_composer_data(composer, 'VOICE_TYPES')[str(self.direction)]

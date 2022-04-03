@@ -4,12 +4,13 @@ from pypond.PondCommand import PondHeader, PondPaper
 from backend.pypond_extensions import LilypondScripts
 from backend.TasteComposer import MainComposer
 from os import path
+import requests
 
 
 class PyPondWriter(QObject):
     file_completed = pyqtSignal(int)
 
-    def __init__(self, beat_duration, use_api=False):
+    def __init__(self, beat_duration, use_api=False, url="localhost"):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
@@ -20,6 +21,7 @@ class PyPondWriter(QObject):
         self.measure_number = 0
         self.beat_duration = beat_duration
         self.use_api = use_api
+        self.api_url = url
 
         self.init_doc()
 
@@ -39,6 +41,8 @@ class PyPondWriter(QObject):
 
     def render_image(self, render=True):
         score, lines = self.composer.compose()
+        if self.use_api:
+            self.post_lines(score, lines)
         if render:
             time = self.composer.current_time
             self.timer.setInterval(self.measure_duration(time))
@@ -51,6 +55,19 @@ class PyPondWriter(QObject):
             self.render.write()
             self.render.render()
             self.file_completed.emit(time)
+
+    def post_lines(self, score, lines):
+        score_data = {'score_data': score.as_string()}
+        response = requests.post(self.api_url, json=score_data)
+        print("Score posted with status code", response.status_code)
+        instrument_url = self.api_url + 'instrument'
+        for instrument, line in lines:
+            line_data = {'instrument': instrument,
+                         'score_data': line.as_string()}
+            response = requests.post(instrument_url, json=line_data)
+            print(f"{instrument} posted with status code", response.status_code)
+
+
 
     @pyqtSlot(dict)
     def update_values(self, values):
