@@ -81,7 +81,6 @@ class PyPondWindow(QWidget):
         self.end.clicked.connect(self.write_score)
         self.auto.clicked.connect(self.automatic_score)
         self.advance.clicked.connect(self.next_direction)
-        self.metronome.init_gui()
 
     @pyqtSlot()
     def next_direction(self):
@@ -94,6 +93,10 @@ class PyPondWindow(QWidget):
         self.signal_update_value.emit({'VOLUME': uniform(0.05, 6),
                                        'DIRECTION': 0})
         self.signal_get_next.emit(True)
+
+    @pyqtSlot()
+    def start(self):
+        self.metronome.init_gui()
 
     @pyqtSlot(int)
     def update_label(self, measure_time):

@@ -23,6 +23,7 @@ if __name__ == "__main__":
     window.signal_update_value.connect(render.update_values)
     bot_messenger.signal_command.connect(render.update_values)
     bot_messenger.signal_start.connect(render.begin)
+    bot_messenger.signal_start.connect(window.start)
     render.file_completed.connect(window.update_label)
 
     bot_messenger.start()

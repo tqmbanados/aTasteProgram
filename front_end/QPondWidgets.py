@@ -65,6 +65,7 @@ class Metronome(QLabel):
 
         self.timer.start()
         self.beeper.start()
+        self.countdown.hide()
 
     def beat(self):
         current_beat = self.current_beat()

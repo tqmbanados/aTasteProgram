@@ -37,7 +37,7 @@ class PyPondWriter(QObject):
         return self.beat_duration * beat_number
 
     def render_image(self, render=True):
-        score = self.composer.compose()
+        score = self.composer.compose()[0]
         if render:
             time = self.composer.current_time
             self.timer.setInterval(self.measure_duration(time))
