@@ -14,9 +14,9 @@ if __name__ == "__main__":
     sys.__excepthook__ = hook
 
     app = QApplication([])
-    window = PyPondWindow(p.beat_duration_ms)
-    render = PyPondWriter(p.beat_duration_ms, p.USE_API)
-    bot_messenger = Messenger(p.commands, channel_name)
+    window = PyPondWindow(p.BEAT_DURATION_MS)
+    render = PyPondWriter(p.BEAT_DURATION_MS, p.USE_API)
+    bot_messenger = Messenger(p.COMMANDS, channel_name)
 
     window.signal_get_next.connect(render.render_image)
     window.signal_write_score.connect(render.write_score)

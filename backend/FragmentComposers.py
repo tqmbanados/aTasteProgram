@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from math import sqrt, modf
-from random import choices, randint, choice, uniform
+from random import choices, randint, choice, uniform, shuffle
 
 from backend.pypond_extensions import LilypondScripts
 from pypond.PondMarks import Articulations, Dynamics, MiscMarks
@@ -34,7 +34,7 @@ class ComposerBase(ABC):
                      6: Dynamics.custom_dynamic("f", 3)}
 
     def __init__(self, instruments=None):
-        self.instruments = instruments or []
+        self.instruments = instruments or {}
         self.dynamic = Dynamics.pianissimo
 
     @abstractmethod
@@ -42,7 +42,7 @@ class ComposerBase(ABC):
         pass
 
     @abstractmethod
-    def compose(self, pitch_universe, direction, volume, voice_data):
+    def compose(self, pitch_universe, direction, volume, voice_data) -> dict:
         pass
 
     @classmethod
@@ -72,6 +72,15 @@ class ComposerBase(ABC):
                 first.trill_marks(False)
         final_fragment.append_fragment(silence_fragment)
         return final_fragment
+
+    def instrument_order(self):
+        instruments = [instrument for instrument in self.instruments]
+        shuffle(instruments)
+        return instruments
+
+    def get_voice_pitch_universe(self, pitch_universe, instrument):
+        instrument = self.instruments[instrument]
+        return instrument.limit_pitch_universe(pitch_universe)
 
     def compose_melodic_fragment(self, pitch_universe, duration=3,
                                  climax=False, tuplet_type="4",
@@ -501,10 +510,6 @@ class ComposerA(ComposerBase):
             dynamic += 1
         self.dynamic = self.dynamics_data[dynamic]
 
-    @staticmethod
-    def volume_calculator(volume):
-        return sqrt(volume) / 4
-
     @classmethod
     def get_tuplet_weights(cls, volume):
         tuplet_weights = {'3': 1 - volume,
@@ -515,29 +520,33 @@ class ComposerA(ComposerBase):
 
         return tuplet_weights
 
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        fragments = []
+    def compose(self, pitch_universe, direction, volume, voice_data) -> dict:
+        lines = {}
         used_tuplets = []
+        instrument_order = self.instrument_order()
         pitch = 0
         min_duration = max(2, direction)
-        pitch_universe = self.get_pitch_universe(pitch_universe, volume)
         for voice_type, silence in voice_data:
+            instrument = instrument_order.pop()
+            temp_universe = self.get_voice_pitch_universe(pitch_universe,
+                                                          instrument)
+            voice_pitch_universe = self.get_pitch_universe(temp_universe, volume)
             extended = randint(3, 5) < direction
             climax = True if direction > 3 else False
             tuplet_type = self.tuplet_type(used_tuplets, volume)
             if voice_type == 1:
                 used_tuplets.append(tuplet_type)
             elif voice_type == 2:
-                mode_pitch = self.get_mode(fragments)
+                mode_pitch = self.get_mode(lines)
                 pitch = mode_pitch
-                if pitch == pitch_universe[-1]:
-                    pitch = pitch_universe[-2]
-            new_fragment = self.compose_instrument(pitch_universe, volume, voice_type,
+                if pitch == voice_pitch_universe[-1]:
+                    pitch = voice_pitch_universe[-2]
+            new_fragment = self.compose_instrument(voice_pitch_universe, volume, voice_type,
                                                    silence, min_duration, climax,
                                                    tuplet_type, pitch, extended)
-            fragments.append(new_fragment)
+            lines[instrument] = new_fragment
 
-        return fragments
+        return lines
 
     def tuplet_type(self, used, volume):
         def tuplet_filter(tuplet):
@@ -621,17 +630,22 @@ class ComposerB(ComposerBase):
     def volume_calculator(volume):
         return (sqrt(volume) / 3) - 0.5
 
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        lines = []
+    def compose(self, pitch_universe, direction, volume, voice_data) -> dict:
+        lines = {}
+        instrument_order = self.instrument_order()
+
         duration = max(2, min(5, randint(1, direction + 1)))
         volume = volume
         extended = randint(2, 4) < direction
 
         for voice_type, silence in voice_data:
-            new_fragment = self.compose_instrument(pitch_universe, duration,
+            instrument = instrument_order.pop()
+            voice_pitch_universe = self.get_voice_pitch_universe(pitch_universe,
+                                                                 instrument)
+            new_fragment = self.compose_instrument(voice_pitch_universe, duration,
                                                    voice_type, silence, volume,
                                                    extended)
-            lines.append(new_fragment)
+            lines[instrument] = new_fragment
 
         return lines
 
@@ -687,18 +701,22 @@ class ComposerC(ComposerBase):
             dynamic += 1
         self.dynamic = self.dynamics_data[dynamic]
 
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        lines = []
+    def compose(self, pitch_universe, direction, volume, voice_data) -> dict:
+        lines = {}
+        instrument_order = self.instrument_order()
         silence = 0
         max_index = len(pitch_universe) - 1
         pitch_index = max_index - int(direction * 1.5)
         for _, fragment_type in voice_data:
-            new_fragment = self.compose_instrument(pitch_universe, volume,
+            instrument = instrument_order.pop()
+            voice_pitch_universe = self.get_voice_pitch_universe(pitch_universe,
+                                                                 instrument)
+            new_fragment = self.compose_instrument(voice_pitch_universe, volume,
                                                    fragment_type, silence,
                                                    pitch_index)
-            lines.append(new_fragment)
             pitch_index -= 1
             silence += 1
+            lines[instrument] = new_fragment
         return lines
 
     def compose_instrument(self, pitch_universe, volume, fragment_type,
@@ -733,16 +751,20 @@ class ComposerD(ComposerBase):
         dynamic = dyn_dict[direction]
         self.dynamic = self.dynamics_data[dynamic]
 
-    def compose(self, pitch_universe, direction, volume, voice_data):
-        lines = []
+    def compose(self, pitch_universe, direction, volume, voice_data) -> dict:
+        lines = {}
+        instrument_order = self.instrument_order()
         max_duration = max(3, 7 - direction)
         max_index = max(4, int(len(pitch_universe) * volume))
         for voice_type, silence in voice_data:
+            instrument = instrument_order.pop()
+            voice_pitch_universe = self.get_voice_pitch_universe(pitch_universe,
+                                                                 instrument)
             duration = randint(3, max_duration)
-            new_fragment = self.compose_instrument(pitch_universe[:max_index],
+            new_fragment = self.compose_instrument(voice_pitch_universe[:max_index],
                                                    duration, volume,
                                                    silence, voice_type)
-            lines.append(new_fragment)
+            lines[instrument] = new_fragment
         return lines
 
     def compose_instrument(self, pitch_universe, duration, volume,

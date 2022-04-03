@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSi
                              QGridLayout, QLabel)
 
 from front_end.QPondWidgets import ScoreLabel, Metronome
-from parameters import SCORE_IMAGE_PATH, window_geometry
+from parameters import SCORE_IMAGE_PATH, WINDOW_GEOMETRY
 from time import sleep
 
 
@@ -17,7 +17,7 @@ class PyPondWindow(QWidget):
 
     def __init__(self, beat_duration):
         super().__init__()
-        self.setGeometry(*window_geometry)
+        self.setGeometry(*WINDOW_GEOMETRY)
         self.music_labels = {}
         self.next = QPushButton("Next", self)
         self.advance = QPushButton("Advance", self)

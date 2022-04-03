@@ -88,8 +88,9 @@ class PondInstrument:
     def limit_pitch_universe(self, pitch_universe: list):
         allowed_pitches = range(self.range[0], self.range[2] + 1)
         universe = pitch_universe.copy()
-        for pitch in allowed_pitches:
-            universe.remove(pitch)
+        for pitch in universe:
+            if pitch not in allowed_pitches:
+                universe.remove(pitch)
         return universe
 
     def transpose(self, melody):

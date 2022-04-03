@@ -80,6 +80,9 @@ class MainComposer:
                                  self.volume,
                                  voice_data)
         target_duration = time_signature_initializers[0]
+
+        lines = [lines['flute'], lines['oboe'], lines['clarinet']]
+
         for line in lines:
             line.transpose(12)
             try:
@@ -116,7 +119,6 @@ class MainComposer:
         types = self.get_composer_data(composer, 'VOICE_TYPES')[str(self.direction)]
         shuffle_silence = self.get_composer_data(composer, 'SHUFFLE_SILENCE')
         voices = choice(types)
-        shuffle(voices)
 
         all_silences = [[1, 2, 2], [1, 1, 2], [0, 1, 2],
                         [0, 1, 1], [0, 1, 1], [0, 0, 1], [0, 0, 1]]
