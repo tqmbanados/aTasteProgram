@@ -1,5 +1,6 @@
 SCORE_IMAGE_PATH = ["ly_files", "ly_files.png"]
-window_geometry = (200, 100, 1700, 900)
-beat_duration_ms = 1000
-commands = ["levantar_brazo", "estirar_brazo", "bajar_brazo", "recoger_brazo",
+WINDOW_GEOMETRY = (200, 100, 1700, 900)
+BEAT_DURATION_MS = 1000
+COMMANDS = ["levantar_brazo", "estirar_brazo", "bajar_brazo", "recoger_brazo",
             "mirar_arriba"]
+USE_API = False

@@ -13,6 +13,7 @@ audience activity and resulting music, the data obtained is limited to command f
 For those who don't have Python or Git installed, an executable version can be found [here](https://drive.google.com/drive/folders/1QBPYQZZcQzIF3kKNgpHF70ut7ll_NNAc?usp=sharing). 
 
 ## How to run
+A folder titled `ly_files` must be created in the same directory as the `main.py` or `main.exe` files.
 
 For the executable version, simply run the file "main.exe". For the code version, run the file by entering "python main.py" in your command line. This command may change depending on your python version. 
 

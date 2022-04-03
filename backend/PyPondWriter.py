@@ -9,7 +9,7 @@ from os import path
 class PyPondWriter(QObject):
     file_completed = pyqtSignal(int)
 
-    def __init__(self, beat_duration):
+    def __init__(self, beat_duration, use_api=False):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
@@ -19,6 +19,7 @@ class PyPondWriter(QObject):
         self.timer = QTimer(parent=self)
         self.measure_number = 0
         self.beat_duration = beat_duration
+        self.use_api = use_api
 
         self.init_doc()
 
@@ -37,7 +38,7 @@ class PyPondWriter(QObject):
         return self.beat_duration * beat_number
 
     def render_image(self, render=True):
-        score = self.composer.compose()[0]
+        score, lines = self.composer.compose()
         if render:
             time = self.composer.current_time
             self.timer.setInterval(self.measure_duration(time))
