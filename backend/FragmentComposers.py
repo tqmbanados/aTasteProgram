@@ -7,6 +7,7 @@ from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
 from pypond.PondCore import DurationInterface
 from statistics import mode
+from functools import reduce
 
 
 class ComposerBase(ABC):
@@ -570,8 +571,10 @@ class ComposerA(ComposerBase):
 
     @classmethod
     def get_mode(cls, lines):
+        lines = list(map(lambda x: x.ordered_notes(), lines.values()))
+        print(lines)
         all_notes = filter(lambda x: not x.is_rest(),
-                           lines[0].ordered_notes() + lines[1].ordered_notes())
+                           lines[0] + lines[1])
         all_pitches = list(map(lambda x: x.absolute_int, all_notes))
         return mode(all_pitches)
 
