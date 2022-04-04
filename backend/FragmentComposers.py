@@ -572,7 +572,6 @@ class ComposerA(ComposerBase):
     @classmethod
     def get_mode(cls, lines):
         lines = list(map(lambda x: x.ordered_notes(), lines.values()))
-        print(lines)
         all_notes = filter(lambda x: not x.is_rest(),
                            lines[0] + lines[1])
         all_pitches = list(map(lambda x: x.absolute_int, all_notes))
