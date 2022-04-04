@@ -12,7 +12,7 @@ class MainComposer:
         with open(file_path, 'r') as file:
             self.data = json.load(file)
         self.stage = 0
-        self.__direction = 0
+        self.__direction = 3
         self.__volume = 0.0
         empty = ComposerEmpty()
         self.instruments = {'flute': PondInstrument(0, 29, 5),

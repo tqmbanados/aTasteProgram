@@ -542,6 +542,9 @@ class ComposerA(ComposerBase):
                 pitch = mode_pitch
                 if pitch == voice_pitch_universe[-1]:
                     pitch = voice_pitch_universe[-2]
+                if pitch not in voice_pitch_universe:
+                    pitch = voice_pitch_universe[1]
+            print(instrument, voice_pitch_universe, pitch)
             new_fragment = self.compose_instrument(voice_pitch_universe, volume, voice_type,
                                                    silence, min_duration, climax,
                                                    tuplet_type, pitch, extended)
@@ -711,7 +714,8 @@ class ComposerC(ComposerBase):
                                                      self.instruments.values())
         max_index = len(shared_universe) - 1
         start_pitch_index = max_index - int(direction * 1.5)
-        pitch_index = pitch_universe.index(start_pitch_index)
+        start_pitch = shared_universe[start_pitch_index]
+        pitch_index = pitch_universe.index(start_pitch)
         for _, fragment_type in voice_data:
             instrument = instrument_order.pop()
             voice_pitch_universe = self.get_voice_pitch_universe(pitch_universe,
