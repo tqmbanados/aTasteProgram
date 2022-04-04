@@ -707,8 +707,11 @@ class ComposerC(ComposerBase):
         lines = {}
         instrument_order = self.instrument_order()
         silence = 0
-        max_index = len(pitch_universe) - 1
-        pitch_index = max_index - int(direction * 1.5)
+        shared_universe = self.shared_pitch_universe(pitch_universe,
+                                                     self.instruments.values())
+        max_index = len(shared_universe) - 1
+        start_pitch_index = max_index - int(direction * 1.5)
+        pitch_index = pitch_universe.index(start_pitch_index)
         for _, fragment_type in voice_data:
             instrument = instrument_order.pop()
             voice_pitch_universe = self.get_voice_pitch_universe(pitch_universe,
@@ -720,6 +723,13 @@ class ComposerC(ComposerBase):
             silence += 1
             lines[instrument] = new_fragment
         return lines
+
+    @classmethod
+    def shared_pitch_universe(cls, pitch_universe, instruments):
+        universe = pitch_universe.copy()
+        for instrument in instruments:
+            universe = instrument.limit_pitch_universe(universe)
+        return universe
 
     def compose_instrument(self, pitch_universe, volume, fragment_type,
                            silence, main_index):

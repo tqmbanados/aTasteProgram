@@ -81,6 +81,10 @@ class MainComposer:
                                                voice_data)
         target_duration = time_signature_initializers[0]
 
+        for instrument, line in lines_by_instrument.items():
+            if instrument == 'clarinet':
+                self.instruments['clarinet'].transpose(line)
+
         lines = [lines_by_instrument['flute'],
                  lines_by_instrument['oboe'],
                  lines_by_instrument['clarinet']]
