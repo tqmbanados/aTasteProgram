@@ -63,7 +63,8 @@ class PyPondWriter(QObject):
         instrument_url = self.api_url + 'instrument'
         for instrument, line in lines:
             line_data = {'instrument': instrument,
-                         'score_data': line.as_string()}
+                         'score_data': line.as_string(),
+                         'duration': self.composer.current_time}
             response = requests.post(instrument_url, json=line_data)
             print(f"{instrument} posted with status code", response.status_code)
 

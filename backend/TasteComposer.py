@@ -12,12 +12,12 @@ class MainComposer:
         with open(file_path, 'r') as file:
             self.data = json.load(file)
         self.stage = 0
-        self.__direction = 3
+        self.__direction = 0
         self.__volume = 0.0
         empty = ComposerEmpty()
         self.instruments = {'flute': PondInstrument(0, 29, 5),
                             'oboe': PondInstrument(-1, 24, 3),
-                            'clarinet': PondInstrument(-8, 24, 3, -2)}
+                            'clarinet': PondInstrument(-8, 24, 3, +2)}
         self.composers = {0: empty,
                           1: ComposerA(instruments=self.instruments),
                           2: ComposerB(instruments=self.instruments),

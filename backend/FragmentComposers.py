@@ -544,7 +544,6 @@ class ComposerA(ComposerBase):
                     pitch = voice_pitch_universe[-2]
                 if pitch not in voice_pitch_universe:
                     pitch = voice_pitch_universe[1]
-            print(instrument, voice_pitch_universe, pitch)
             new_fragment = self.compose_instrument(voice_pitch_universe, volume, voice_type,
                                                    silence, min_duration, climax,
                                                    tuplet_type, pitch, extended)

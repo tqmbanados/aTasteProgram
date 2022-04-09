@@ -4,10 +4,12 @@ from random import uniform
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSizePolicy,
                              QGridLayout, QLabel)
+from PyQt5.QtGui import QFont
 
 from front_end.QPondWidgets import ScoreLabel, Metronome
-from parameters import SCORE_IMAGE_PATH, WINDOW_GEOMETRY
+from parameters import SCORE_IMAGE_PATH, WINDOW_GEOMETRY, COMMANDS_TEST
 from time import sleep
+from random import choice
 
 
 class PyPondWindow(QWidget):
@@ -23,6 +25,7 @@ class PyPondWindow(QWidget):
         self.advance = QPushButton("Advance", self)
         self.end = QPushButton("End", self)
         self.auto = QPushButton("Auto-generate", self)
+        self.acting = QLabel("", self)
         self.metronome = Metronome(beat_duration, parent=self)
         self.grid_based = True
         self.init_gui()
@@ -61,10 +64,15 @@ class PyPondWindow(QWidget):
             score_layout.addWidget(new_music_label, 2)
             score_layout.addStretch(1)
 
+        font = QFont()
+        font.setPointSize(20)
+        self.acting.setFont(font)
+
         h_box_button = QVBoxLayout()
         h_box_button.addStretch()
         h_box_button.addWidget(self.metronome)
         h_box_button.addStretch()
+        h_box_button.addWidget(self.acting)
         h_box_button.addWidget(self.next)
         h_box_button.addWidget(self.advance)
         h_box_button.addWidget(self.end)
@@ -105,12 +113,15 @@ class PyPondWindow(QWidget):
             label_hide = self.music_labels[idx_hide]
             label_hide.hide()
 
+        text = choice(COMMANDS_TEST)
+        self.acting.setText(text)
         idx_update = self.next_label()
         label_update = self.music_labels[idx_update]
         image_path = path.join(*SCORE_IMAGE_PATH)
         label_update.update_label(image_path)
         self.metronome.new_measure(measure_time)
         label_update.show()
+
 
     def write_score(self):
         self.signal_write_score.emit()
