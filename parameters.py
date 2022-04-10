@@ -1,9 +1,11 @@
 SCORE_IMAGE_PATH = ["ly_files", "ly_files.png"]
 WINDOW_GEOMETRY = (200, 100, 1700, 900)
 BEAT_DURATION_MS = 1000
-COMMANDS = ["levantar brazo", "estirar brazo", "bajar brazo", "recoger brazo",
-            "mirar arriba", "mirar abajo", "mirar al frente", "asentir", "negar",
-            "entregar objeto"]
+COMMANDS = ['estirar_brazo', 'encoger_brazo', 'levantar_brazo', 'bajar_brazo', 'asentir', 'negar',
+            'girar', 'saltar', 'saludar', 'moverse_a_la_izquierda', 'moverse_a_la_derecha',
+            'abrir_bolsa', 'entregar_regalo', 'escuchar', 'tocar_un_instrumento', 'olvidar_algo',
+            'recordar_algo', 'tener_una_idea', 'comenzar_baile', 'terminar_baile', 'nadar',
+            'esconderse', 'esconder_objeto']
 USE_API = False
 
 COMMANDS_TEST = ["Estirar Brazo", "Recoger Brazo", "Levantar Brazo", "Bajar Brazo",

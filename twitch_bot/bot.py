@@ -56,7 +56,8 @@ class ControlBot(commands.Bot):
         print(command)
         volume = self.timer.get_volume()
         update_data = {'DIRECTION': 0,
-                       'VOLUME': volume}
+                       'VOLUME': volume,
+                       "COMMAND": command}
         self.signal_command.emit(update_data)
 
 

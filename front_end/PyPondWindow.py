@@ -98,8 +98,10 @@ class PyPondWindow(QWidget):
 
     @pyqtSlot()
     def get_next(self):
+        command = self.acting.text()
         self.signal_update_value.emit({'VOLUME': uniform(0.05, 6),
-                                       'DIRECTION': 0})
+                                       'DIRECTION': 0,
+                                       'COMMAND': command})
         self.signal_get_next.emit(True)
 
     @pyqtSlot()
@@ -121,7 +123,6 @@ class PyPondWindow(QWidget):
         label_update.update_label(image_path)
         self.metronome.new_measure(measure_time)
         label_update.show()
-
 
     def write_score(self):
         self.signal_write_score.emit()
@@ -149,7 +150,8 @@ class Generator(QThread):
             if increase_direction > 4:
                 increase_direction = 0
             self.signal_update.emit({'VOLUME': volume,
-                                     'DIRECTION': direction})
+                                     'DIRECTION': direction,
+                                     'COMMAND': "mirar_al_frente"})
             self.signal_next.emit(False)
             sleep(4)
 

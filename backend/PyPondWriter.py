@@ -19,6 +19,7 @@ class PyPondWriter(QObject):
         self.advance_bar = False
         self.timer = QTimer(parent=self)
         self.measure_number = 0
+        self.command = 'mirar al frente'
         self.beat_duration = beat_duration
         self.use_api = use_api
         self.api_url = url
@@ -67,8 +68,12 @@ class PyPondWriter(QObject):
                          'duration': self.composer.current_time}
             response = requests.post(instrument_url, json=line_data)
             print(f"{instrument} posted with status code", response.status_code)
-
-
+        stage = f"{self.composer.stage}-{self.composer.direction}"
+        command_data = {'action': self.command,
+                        'stage': stage}
+        actor_url = self.api_url + 'actor'
+        response = requests.post(actor_url, json=command_data)
+        print(f"Actor posted with status code", response.status_code)
 
     @pyqtSlot(dict)
     def update_values(self, values):
@@ -76,6 +81,7 @@ class PyPondWriter(QObject):
         self.composer.volume = volume
         direction = values['DIRECTION']
         self.composer.direction += direction
+        self.command = values['COMMAND']
 
     @pyqtSlot()
     def write_score(self):
