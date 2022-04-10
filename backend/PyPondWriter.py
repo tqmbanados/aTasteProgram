@@ -3,8 +3,8 @@ from pypond.PondFile import PondDoc, PondRender
 from pypond.PondCommand import PondHeader, PondPaper
 from backend.pypond_extensions import LilypondScripts
 from backend.TasteComposer import MainComposer
+from backend.pond_request import put_score, put_actor
 from os import path
-import requests
 
 
 class PyPondWriter(QObject):
@@ -58,21 +58,14 @@ class PyPondWriter(QObject):
             self.file_completed.emit(time)
 
     def post_lines(self, score, lines):
-        score_data = {'score_data': score.as_string()}
-        response = requests.post(self.api_url, json=score_data)
+        response = put_score(score.as_string(), 'score')
         print("Score posted with status code", response.status_code)
-        instrument_url = self.api_url + 'instrument'
         for instrument, line in lines:
-            line_data = {'instrument': instrument,
-                         'score_data': line.as_string(),
-                         'duration': self.composer.current_time}
-            response = requests.post(instrument_url, json=line_data)
+            response = put_score(line.as_string(), instrument,
+                                 self.composer.current_time)
             print(f"{instrument} posted with status code", response.status_code)
         stage = f"{self.composer.stage}-{self.composer.direction}"
-        command_data = {'action': self.command,
-                        'stage': stage}
-        actor_url = self.api_url + 'actor'
-        response = requests.post(actor_url, json=command_data)
+        response = put_actor(self.command, stage)
         print(f"Actor posted with status code", response.status_code)
 
     @pyqtSlot(dict)

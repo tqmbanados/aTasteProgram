@@ -1,22 +1,23 @@
 import requests
 
-from private_parameters import url
+from param import url
 
 
-def put_score(score_string, score_type):
+def put_score(score_string, score_type, duration=6):
     if score_type == "score":
         extension = ""
         data = {'score_data': score_string}
     else:
         extension = "instrument"
         data = {'score_data': score_string,
-                'instrumet': score_type}
+                'instrument': score_type,
+                'duration': duration}
     try:
         response = requests.put(url + extension, data=data)
     except requests.exceptions as exception:
         print(exception)
         return
-    print(response.status_code)
+    return response
 
 
 def get_score(score_type):
@@ -25,13 +26,33 @@ def get_score(score_type):
         data = {}
     else:
         extension = "instrument"
-        data = {'instrumet': score_type}
+        data = {'instrument': score_type}
     try:
         response = requests.get(url + extension, data=data)
     except requests.exceptions as exception:
         print(exception)
         return
 
-    print(response.status_code)
-    json = response.json()
-    return json["score_data"]
+    return response
+
+
+def put_actor(actor_string, stage):
+    data = {'action': actor_string,
+            'stage': stage}
+    extension = 'url'
+    try:
+        response = requests.put(url + extension, data=data)
+    except requests.exceptions as exception:
+        print(exception)
+        return
+    return response
+
+
+def get_actor():
+    extension = 'actor'
+    try:
+        response = requests.get(url + extension)
+    except requests.exceptions as exception:
+        print(exception)
+        return
+    return response
