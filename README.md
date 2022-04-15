@@ -28,3 +28,7 @@ On the window, you will have access to different options:
  * **Auto-generate**: Cause the program to atomatically advance the piece. Next option must still be clicked manually. 
 
 For the executable, and older version of the programm is used, that requires less dependencies and is better for testing. Here only the options `Next` and `End` and `Run` are available, run being equivalent to `Autogenerate`, but not requiring the `Next` button to be clicked manually.  
+
+## Interface for performers
+
+Performence use a separate program to connect to an API where the Lilypond code is saved. This program is founde [here](https://github.com/tqmbanados/PuppetInterface).
