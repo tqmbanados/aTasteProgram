@@ -17,7 +17,7 @@ class PyPondWindow(QWidget):
     signal_write_score = pyqtSignal()
     signal_update_value = pyqtSignal(dict)
 
-    def __init__(self, beat_duration):
+    def __init__(self, beat_duration, *args, **kwargs):
         super().__init__()
         self.setGeometry(*WINDOW_GEOMETRY)
         self.music_labels = {}
@@ -142,7 +142,7 @@ class Generator(QThread):
         self.signal_update = signal_update
 
     def run(self):
-        volume_list = [uniform(0.05, 5) for _ in range(200)]
+        volume_list = [uniform(0.05, 5) for _ in range(220)]
         increase_direction = -1
         for volume in volume_list:
             direction = not increase_direction
