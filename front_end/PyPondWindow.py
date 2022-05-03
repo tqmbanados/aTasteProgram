@@ -7,9 +7,8 @@ from PyQt5.QtWidgets import (QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QSi
 from PyQt5.QtGui import QFont
 
 from front_end.QPondWidgets import ScoreLabel, Metronome
-from parameters import SCORE_IMAGE_PATH, WINDOW_GEOMETRY, COMMANDS_TEST
+from parameters import SCORE_IMAGE_PATH, WINDOW_GEOMETRY
 from time import sleep
-from random import choice
 
 
 class PyPondWindow(QWidget):
@@ -26,6 +25,7 @@ class PyPondWindow(QWidget):
         self.end = QPushButton("End", self)
         self.auto = QPushButton("Auto-generate", self)
         self.acting = QLabel("", self)
+        self.acting_script = QLabel("", self)
         self.metronome = Metronome(beat_duration, parent=self)
         self.grid_based = True
         self.init_gui()
@@ -67,11 +67,13 @@ class PyPondWindow(QWidget):
         font = QFont()
         font.setPointSize(20)
         self.acting.setFont(font)
+        self.acting_script.setFont(font)
 
         h_box_button = QVBoxLayout()
         h_box_button.addStretch()
         h_box_button.addWidget(self.metronome)
         h_box_button.addStretch()
+        h_box_button.addWidget(self.acting_script)
         h_box_button.addWidget(self.acting)
         h_box_button.addWidget(self.next)
         h_box_button.addWidget(self.advance)
@@ -108,15 +110,16 @@ class PyPondWindow(QWidget):
     def start(self):
         self.metronome.init_gui()
 
-    @pyqtSlot(int)
-    def update_label(self, measure_time):
+    @pyqtSlot(int, tuple)
+    def update_label(self, measure_time, acting_data):
         if self.grid_based:
             idx_hide = self.hide_label_idx()
             label_hide = self.music_labels[idx_hide]
             label_hide.hide()
 
-        text = choice(COMMANDS_TEST)
-        self.acting.setText(text)
+        action, stage = acting_data
+        self.acting_script.setText(stage)
+        self.acting.setText(action)
         idx_update = self.next_label()
         label_update = self.music_labels[idx_update]
         image_path = path.join(*SCORE_IMAGE_PATH)
@@ -142,7 +145,7 @@ class Generator(QThread):
         self.signal_update = signal_update
 
     def run(self):
-        volume_list = [uniform(0.05, 5) for _ in range(220)]
+        volume_list = [uniform(0.05, 5) for _ in range(250)]
         increase_direction = -1
         for volume in volume_list:
             direction = not increase_direction
@@ -153,6 +156,6 @@ class Generator(QThread):
                                      'DIRECTION': direction,
                                      'COMMAND': "mirar_al_frente"})
             self.signal_next.emit(False)
-            sleep(4)
+            sleep(5)
 
         self.signal_write.emit()

@@ -16,7 +16,7 @@ class MainComposer:
         self.__volume = 0.0
         empty = ComposerEmpty()
         self.instruments = {'flute': PondInstrument(0, 32, 5),
-                            'oboe': PondInstrument(-1, 28, 3),
+                            'oboe': PondInstrument(-1, 27, 3),
                             'clarinet': PondInstrument(-8, 24, 3, +2)}
         self.composers = {0: empty,
                           1: ComposerA(instruments=self.instruments),

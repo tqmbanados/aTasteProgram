@@ -473,11 +473,11 @@ class ComposerEmpty(ComposerBase):
     def set_dynamic(self, direction, volume):
         self.dynamic = Dynamics.mezzo_forte
 
-    def compose(self, *args, **kwargs):
-        lines = []
-        for _ in range(3):
+    def compose(self, *args, **kwargs) -> dict:
+        lines = {}
+        for instrument in ('flute', 'oboe', 'clarinet'):
             new_line = self.compose_instrument()
-            lines.append(new_line)
+            lines[instrument] = new_line
         return lines
 
     @classmethod
@@ -490,6 +490,7 @@ class ComposerEmpty(ComposerBase):
             fragment.append_fragment(new_rest)
         new_note = PondNote(11, "1")
         LilypondScripts.make_slash(new_note)
+
         fragment.insert_fragment(1, new_note)
         return fragment
 

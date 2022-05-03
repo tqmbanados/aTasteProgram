@@ -4,11 +4,14 @@ from pypond.PondCommand import PondHeader, PondPaper
 from backend.pypond_extensions import LilypondScripts
 from backend.TasteComposer import MainComposer
 from backend.pond_request import put_score, put_actor
+from parameters import COMMANDS_TEST
+from random import choice
 from os import path
 
 
 class PyPondWriter(QObject):
-    file_completed = pyqtSignal(int)
+    file_completed = pyqtSignal(int, tuple)
+    stage_to_acting = '0ABCCD00'
 
     def __init__(self, beat_duration, use_api=False, url="localhost"):
         super().__init__()
@@ -55,7 +58,8 @@ class PyPondWriter(QObject):
             self.render.update(self.pond_doc.create_file())
             self.render.write()
             self.render.render()
-            self.file_completed.emit(time)
+            actor_data = self.get_actor_data()
+            self.file_completed.emit(time, actor_data)
 
     def post_lines(self, score, lines):
         response = put_score(score.as_string(), 'score')
@@ -67,6 +71,15 @@ class PyPondWriter(QObject):
         stage = f"{self.composer.stage}-{self.composer.direction}"
         response = put_actor(self.command, stage)
         print(f"Actor posted with status code", response.status_code)
+
+    def get_actor_data(self) -> tuple:
+        stage = self.composer.stage
+        act = self.stage_to_acting[stage]
+        direction = self.composer.direction
+        scene = '' if direction < 4 else '->'
+        stage_data = act + scene
+        action = choice(COMMANDS_TEST)
+        return action, stage_data
 
     @pyqtSlot(dict)
     def update_values(self, values):
