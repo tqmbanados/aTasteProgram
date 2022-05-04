@@ -20,6 +20,7 @@ For those who don't have Python or Git installed, an executable version can be f
 ## How to run
 
 For the executable version, simply run the file "main.exe". For the code version, run the file by entering "python main.py" in your command line. This command may change depending on your python version. 
+For testing without an API, it is important to set the parameter `USE_API` in `parameters.py` to `False`.
 
 On the window, you will have access to different options:
  * **Next**: Ask the program to generate one measure of music.
