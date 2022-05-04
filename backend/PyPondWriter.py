@@ -45,6 +45,7 @@ class PyPondWriter(QObject):
 
     def render_image(self, render=True):
         score, lines = self.composer.compose()
+        actor_data = self.get_actor_data()
         if self.use_api:
             self.post_lines(score, lines)
         if render:
@@ -58,14 +59,16 @@ class PyPondWriter(QObject):
             self.render.update(self.pond_doc.create_file())
             self.render.write()
             self.render.render()
-            actor_data = self.get_actor_data()
             self.file_completed.emit(time, actor_data)
 
     def post_lines(self, score, lines):
         response = put_score(score.as_string(), 'score')
         print("Score posted with status code", response.status_code)
-        for instrument, line in lines:
-            response = put_score(line.as_string(), instrument,
+        zipped = zip(lines, ['Flute', 'Oboe', 'Clarinet'])
+        for line, instrument in zipped:
+            print(line, instrument)
+            print(line, instrument)
+            response = put_score(str(line), instrument,
                                  self.composer.current_time)
             print(f"{instrument} posted with status code", response.status_code)
         stage = f"{self.composer.stage}-{self.composer.direction}"

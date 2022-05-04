@@ -28,7 +28,7 @@ def get_score(score_type):
         extension = "instrument"
         data = {'instrument': score_type}
     try:
-        response = requests.get(url + extension, data=data)
+        response = requests.get(url + extension, params=data)
     except requests.exceptions as exception:
         print(exception)
         return
@@ -39,7 +39,8 @@ def get_score(score_type):
 def put_actor(actor_string, stage):
     data = {'action': actor_string,
             'stage': stage}
-    extension = 'url'
+    extension = 'actor'
+
     try:
         response = requests.put(url + extension, data=data)
     except requests.exceptions as exception:

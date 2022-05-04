@@ -119,7 +119,7 @@ class MainComposer:
             score.add_staff(staff)
 
         self.current_time = target_duration
-        return score, lines_by_instrument
+        return score, lines
 
     def get_voice_data(self, composer):
         types = self.get_composer_data(composer, 'VOICE_TYPES')[str(self.direction)]

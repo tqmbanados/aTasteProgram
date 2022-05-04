@@ -6,7 +6,7 @@ COMMANDS = ['estirar_brazo', 'encoger_brazo', 'levantar_brazo', 'bajar_brazo', '
             'abrir_bolsa', 'entregar_regalo', 'escuchar', 'tocar_un_instrumento', 'olvidar_algo',
             'recordar_algo', 'tener_una_idea', 'comenzar_baile', 'terminar_baile', 'nadar',
             'esconderse', 'esconder_objeto']
-USE_API = False
+USE_API = True
 
 COMMANDS_TEST = ["Estirar Brazo", "Recoger Brazo", "Levantar Brazo", "Bajar Brazo",
                  "Asentir", "Negar", "Girar", "Saltar", "Saludar", "Moverse a la Izquierda",
