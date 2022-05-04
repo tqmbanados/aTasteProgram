@@ -66,8 +66,6 @@ class PyPondWriter(QObject):
         print("Score posted with status code", response.status_code)
         zipped = zip(lines, ['Flute', 'Oboe', 'Clarinet'])
         for line, instrument in zipped:
-            print(line, instrument)
-            print(line, instrument)
             response = put_score(str(line), instrument,
                                  self.composer.current_time)
             print(f"{instrument} posted with status code", response.status_code)
