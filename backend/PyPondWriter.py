@@ -22,6 +22,7 @@ class PyPondWriter(QObject):
         self.advance_bar = False
         self.timer = QTimer(parent=self)
         self.measure_number = 0
+        self.action_number = 0
         self.command = 'mirar al frente'
         self.beat_duration = beat_duration
         self.use_api = use_api
@@ -46,6 +47,7 @@ class PyPondWriter(QObject):
     def render_image(self, render=True):
         score, lines = self.composer.compose()
         actor_data = self.get_actor_data()
+        self.measure_number += 1
         if self.use_api:
             self.post_lines(score, lines)
         if render:
@@ -54,7 +56,6 @@ class PyPondWriter(QObject):
             print(f"Rendering measure {self.measure_number}\n"
                   f"    Volume: {self.composer.volume}\n"
                   f"    Stage: {self.composer.stage}-{self.composer.direction}")
-            self.measure_number += 1
             self.pond_doc.score = score
             self.render.update(self.pond_doc.create_file())
             self.render.write()
@@ -67,10 +68,10 @@ class PyPondWriter(QObject):
         zipped = zip(lines, ['Flute', 'Oboe', 'Clarinet'])
         for line, instrument in zipped:
             response = put_score(str(line), instrument,
-                                 self.composer.current_time)
+                                 self.composer.current_time, self.measure_number)
             print(f"{instrument} posted with status code", response.status_code)
         stage = f"{self.composer.stage}-{self.composer.direction}"
-        response = put_actor(self.command, stage)
+        response = put_actor(self.command, stage, self.action_number)
         print(f"Actor posted with status code", response.status_code)
 
     def get_actor_data(self) -> tuple:
@@ -89,6 +90,7 @@ class PyPondWriter(QObject):
         direction = values['DIRECTION']
         self.composer.direction += direction
         self.command = values['COMMAND']
+        self.action_number += 1
 
     @pyqtSlot()
     def write_score(self):

@@ -3,7 +3,7 @@ import requests
 from param import url
 
 
-def put_score(score_string, score_type, duration=6):
+def put_score(score_string, score_type, duration=6, measure_number=0):
     if score_type == "score":
         extension = ""
         data = {'score_data': score_string}
@@ -11,7 +11,9 @@ def put_score(score_string, score_type, duration=6):
         extension = "instrument"
         data = {'score_data': score_string,
                 'instrument': score_type,
-                'duration': duration}
+                'duration': duration,
+                'measure': measure_number
+                }
     try:
         response = requests.put(url + extension, data=data)
     except requests.exceptions as exception:
@@ -36,9 +38,10 @@ def get_score(score_type):
     return response
 
 
-def put_actor(actor_string, stage):
+def put_actor(actor_string, stage, action_number):
     data = {'action': actor_string,
-            'stage': stage}
+            'stage': stage,
+            'number': action_number}
     extension = 'actor'
 
     try:
