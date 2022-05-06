@@ -80,6 +80,7 @@ class PyPondWindow(QWidget):
         h_box_button.addWidget(self.end)
         h_box_button.addWidget(self.auto)
         h_box_button.addStretch()
+        self.metronome.hide()
 
         hbox_main = QHBoxLayout()
         hbox_main.addLayout(score_layout, 5)

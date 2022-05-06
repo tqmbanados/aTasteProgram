@@ -7,7 +7,6 @@ from pypond.PondMarks import Articulations, Dynamics, MiscMarks
 from pypond.PondMusic import PondNote, PondFragment, PondPhrase, PondTuplet, PondPitch
 from pypond.PondCore import DurationInterface
 from statistics import mode
-from functools import reduce
 
 
 class ComposerBase(ABC):
