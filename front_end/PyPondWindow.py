@@ -28,6 +28,7 @@ class PyPondWindow(QWidget):
         self.acting_script = QLabel("", self)
         self.metronome = Metronome(beat_duration, parent=self)
         self.grid_based = True
+        self.use_metronome = False
         self.init_gui()
         self.__next = 0
 
@@ -80,7 +81,6 @@ class PyPondWindow(QWidget):
         h_box_button.addWidget(self.end)
         h_box_button.addWidget(self.auto)
         h_box_button.addStretch()
-        self.metronome.hide()
 
         hbox_main = QHBoxLayout()
         hbox_main.addLayout(score_layout, 5)
@@ -109,7 +109,10 @@ class PyPondWindow(QWidget):
 
     @pyqtSlot()
     def start(self):
-        self.metronome.init_gui()
+        if self.use_metronome:
+            self.metronome.init_gui()
+        else:
+            self.metronome.hide()
 
     @pyqtSlot(int, tuple)
     def update_label(self, measure_time, acting_data):
