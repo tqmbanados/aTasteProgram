@@ -527,7 +527,7 @@ class ComposerA(ComposerBase):
         used_tuplets = []
         instrument_order = self.instrument_order()
         pitch = 0
-        min_duration = max(2, direction)
+        min_duration = max(2, direction - 1)
         for voice_type, silence in voice_data:
             instrument = instrument_order.pop()
             temp_universe = self.get_voice_pitch_universe(pitch_universe,

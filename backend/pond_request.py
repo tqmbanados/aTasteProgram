@@ -1,6 +1,6 @@
 import requests
 
-from param import url
+from private_parameters import url
 
 
 def put_score(score_string, score_type, duration=6, measure_number=0):
@@ -16,22 +16,23 @@ def put_score(score_string, score_type, duration=6, measure_number=0):
                 }
     try:
         response = requests.put(url + extension, data=data)
-    except requests.exceptions as exception:
+    except requests.exceptions.ConnectionError as exception:
         print(exception)
         return
     return response
 
 
-def get_score(score_type):
+def get_score(score_type, measure_number):
     if score_type == "score":
         extension = ""
         data = {}
     else:
         extension = "instrument"
-        data = {'instrument': score_type}
+        data = {'instrument': score_type,
+                'measure': measure_number}
     try:
         response = requests.get(url + extension, params=data)
-    except requests.exceptions as exception:
+    except requests.exceptions.ConnectionError as exception:
         print(exception)
         return
 
@@ -46,7 +47,7 @@ def put_actor(actor_string, stage, action_number):
 
     try:
         response = requests.put(url + extension, data=data)
-    except requests.exceptions as exception:
+    except requests.exceptions.ConnectionError as exception:
         print(exception)
         return
     return response
@@ -56,7 +57,7 @@ def get_actor():
     extension = 'actor'
     try:
         response = requests.get(url + extension)
-    except requests.exceptions as exception:
+    except requests.exceptions.ConnectionError as exception:
         print(exception)
         return
     return response
