@@ -16,10 +16,11 @@ class PyPondWindow(QWidget):
     signal_write_score = pyqtSignal()
     signal_update_value = pyqtSignal(dict)
 
-    def __init__(self, beat_duration, *args, **kwargs):
+    def __init__(self, beat_duration, image_path, *args, **kwargs):
         super().__init__()
         self.setGeometry(*WINDOW_GEOMETRY)
         self.music_labels = {}
+        self.image_path = image_path
         self.next = QPushButton("Next", self)
         self.advance = QPushButton("Advance", self)
         self.end = QPushButton("End", self)
@@ -29,6 +30,7 @@ class PyPondWindow(QWidget):
         self.metronome = Metronome(beat_duration, parent=self)
         self.grid_based = True
         self.use_metronome = False
+        self.hide_score_label = False
         self.init_gui()
         self.__next = 0
 
@@ -61,12 +63,22 @@ class PyPondWindow(QWidget):
         self.grid_based = False
         for idx in range(2):
             new_music_label = ScoreLabel(idx, parent=self)
+            if self.hide_score_label:
+                new_music_label.hide()
             self.music_labels[idx] = new_music_label
             score_layout.addWidget(new_music_label, 2)
             score_layout.addStretch(1)
 
+        if not self.use_metronome:
+            self.metronome.hide()
+
+        if self.hide_score_label:
+            a, b, size = 0, 5, 100
+        else:
+            a, b, size = 5, 1, 20
+
         font = QFont()
-        font.setPointSize(20)
+        font.setPointSize(size)
         self.acting.setFont(font)
         self.acting_script.setFont(font)
 
@@ -83,8 +95,8 @@ class PyPondWindow(QWidget):
         h_box_button.addStretch()
 
         hbox_main = QHBoxLayout()
-        hbox_main.addLayout(score_layout, 5)
-        hbox_main.addLayout(h_box_button, 1)
+        hbox_main.addLayout(score_layout, a)
+        hbox_main.addLayout(h_box_button, b)
 
         self.setLayout(hbox_main)
         self.setStyleSheet("background-color: white")
@@ -126,10 +138,11 @@ class PyPondWindow(QWidget):
         self.acting.setText(action)
         idx_update = self.next_label()
         label_update = self.music_labels[idx_update]
-        image_path = path.join(*SCORE_IMAGE_PATH)
+        image_path = self.image_path
         label_update.update_label(image_path)
         self.metronome.new_measure(measure_time)
-        label_update.show()
+        if not self.hide_score_label:
+            label_update.show()
 
     def write_score(self):
         self.signal_write_score.emit()

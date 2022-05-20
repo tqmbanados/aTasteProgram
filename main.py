@@ -6,6 +6,7 @@ from twitch_bot.bot import Messenger
 import sys
 import parameters as p
 from private_parameters import channel_name, url
+from os import path
 
 
 if __name__ == "__main__":
@@ -13,9 +14,11 @@ if __name__ == "__main__":
         print(value, type_)
         print(traceback)
     sys.__excepthook__ = hook
-
+    with open('file_name.txt', 'rt') as file:
+        file_name = file.read()
+        path = path.join('ly_files', file_name)
     app = QApplication([])
-    window = PyPondWindow(p.BEAT_DURATION_MS)
+    window = PyPondWindow(p.BEAT_DURATION_MS, path)
     render = PyPondWriter(p.BEAT_DURATION_MS, p.USE_API, url)
     bot_messenger = Messenger(p.COMMANDS, channel_name)
 

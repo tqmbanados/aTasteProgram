@@ -31,6 +31,7 @@ class PyPondWriter(QObject):
         self.init_doc()
 
     def init_doc(self):
+        print("Connecting to ", self.api_url)
         self.pond_doc.header = PondHeader()
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
