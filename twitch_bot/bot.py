@@ -31,10 +31,11 @@ class ControlBot(commands.Bot):
         if message.content in self.control_commands:
             await self.command_recieved(message.content)
             return
-        print(message)
 
-        if message.author.name.lower() == token_data.ADMIN:
+        if message.author.name.lower() in token_data.ADMIN:
             await self.handle_commands(message)
+        else:
+            print(message)
 
     @commands.command()
     async def begin(self, ctx: commands.Context):

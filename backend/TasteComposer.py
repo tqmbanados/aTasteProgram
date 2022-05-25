@@ -90,7 +90,7 @@ class MainComposer:
                  lines_by_instrument['clarinet']]
 
         for line in lines:
-            line.transpose(12)
+            line.transpose(12, override_static=True)
             try:
                 assert line.real_duration == target_duration
             except AssertionError:

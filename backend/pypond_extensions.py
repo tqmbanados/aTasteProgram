@@ -40,6 +40,7 @@ class LilypondScripts:
     @classmethod
     def make_slash(cls, pond_note):
         pond_note.pre_marks.append("\\headSlash ")
+        pond_note.static = True
 
     @classmethod
     def glissando(cls, pond_note, gliss_on=True):

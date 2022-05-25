@@ -33,6 +33,7 @@ class PyPondWriter(QObject):
     def init_doc(self):
         print("Connecting to ", self.api_url)
         self.pond_doc.header = PondHeader()
+        self.render.set_config(resolution=180)
         for name, function in LilypondScripts.commands_dict().items():
             self.pond_doc.add_function(name, function)
         self.timer.timeout.connect(self.render_image)
