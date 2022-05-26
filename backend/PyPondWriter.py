@@ -13,7 +13,7 @@ class PyPondWriter(QObject):
     file_completed = pyqtSignal(int, tuple)
     stage_to_acting = '0ABCCD00'
 
-    def __init__(self, beat_duration, use_api=False, url="localhost"):
+    def __init__(self, beat_duration, use_api=False, test=False, url="localhost"):
         super().__init__()
         self.render = PondRender()
         self.pond_doc = PondDoc()
@@ -23,7 +23,8 @@ class PyPondWriter(QObject):
         self.timer = QTimer(parent=self)
         self.measure_number = 0
         self.action_number = 0
-        self.command = 'mirar al frente'
+        self.test = test
+        self.command = 'inerte'
         self.beat_duration = beat_duration
         self.use_api = use_api
         self.api_url = url
@@ -72,6 +73,9 @@ class PyPondWriter(QObject):
             response = put_score(str(line), instrument,
                                  self.composer.current_time, self.measure_number)
             print(f"{instrument} posted with status code", response.status_code)
+        self.post_actor()
+
+    def post_actor(self):
         stage = f"{self.composer.stage}-{self.composer.direction}"
         response = put_actor(self.command, stage, self.action_number)
         print(f"Actor posted with status code", response.status_code)
@@ -82,7 +86,7 @@ class PyPondWriter(QObject):
         direction = self.composer.direction
         scene = '' if direction < 4 else '->'
         stage_data = act + scene
-        action = choice(COMMANDS_TEST)
+        action = choice(COMMANDS_TEST) if self.test else self.command
         return action, stage_data
 
     @pyqtSlot(dict)
@@ -93,6 +97,7 @@ class PyPondWriter(QObject):
         self.composer.direction += direction
         self.command = values['COMMAND']
         self.action_number += 1
+        self.post_actor()
 
     @pyqtSlot()
     def write_score(self):

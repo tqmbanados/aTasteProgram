@@ -18,7 +18,7 @@ if __name__ == "__main__":
     image_path = path.join(*p.SCORE_IMAGE_PATH)
 
     window = PyPondWindow(p.BEAT_DURATION_MS, image_path)
-    render = PyPondWriter(p.BEAT_DURATION_MS, p.USE_API, url)
+    render = PyPondWriter(p.BEAT_DURATION_MS, p.USE_API, p.TEST_COMMANDS, url)
     bot_messenger = Messenger(p.COMMANDS, channel_name)
 
     window.signal_get_next.connect(render.render_image)
