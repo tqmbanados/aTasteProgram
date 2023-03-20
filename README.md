@@ -2,6 +2,8 @@
 Code used for piece "A Taste of Control" (2022). Creates scores measure by measure using data obtained from a chat interface. To attempt a high relationship between 
 audience activity and resulting music, the data obtained is limited to command frequency (``volume``) and subjective continuity of each command (`direction`).
 
+[A video of the most recent performance](https://youtu.be/fK940uFdq6A).
+
 ## Requirements
 * Python 3.7 or newer.
 * PyQt5 installed
@@ -27,6 +29,8 @@ On the window, you will have access to different options:
  * **End**: Save all generated measures as one lilypond file.
  * **Auto-generate**: Cause the program to atomatically advance the piece. Next option must still be clicked manually. 
 
-## Interface for performers
+## Related repositories
 
-Performers use a separate program to connect to an API where the Lilypond code is saved. This program is found [here](https://github.com/tqmbanados/PuppetInterface).
+* Performers use a separate program to connect to an API where the Lilypond code is saved. This program is found [here](https://github.com/tqmbanados/PuppetInterface).
+* The code for the Twitch Bot used in the most recent performance is [here](https://github.com/tqmbanados/aTwitchProgram)
+* The Pypond library can be found [here](https://github.com/tqmbanados/pypond)
