@@ -33,5 +33,4 @@ On the window, you will have access to different options:
 
 * Performers use a separate program to connect to an API where the Lilypond code is saved. This program is found [here](https://github.com/tqmbanados/PuppetInterface).
 * The source code for the API is [here](https://github.com/tqmbanados/tasteOfControlAPI).
-* The code for the Twitch Bot used in the most recent performance is [here](https://github.com/tqmbanados/aTwitchProgram).
 * The Pypond library can be found [here](https://github.com/tqmbanados/pypond).
